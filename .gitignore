@@ -147,3 +147,8 @@ vite.config.ts.timestamp-*
 
 # Turbo Repo
 .turbo
+
+# Playwright scan artifacts
+playwright-report/
+test-results/
+tests/scan/__screenshots__/

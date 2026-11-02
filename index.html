@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seasonal QR</title>
+    <style>
+      body { margin: 0; background: #fff; color: #1a1a1a; font: 14px/1.4 system-ui, sans-serif; }
+      main { display: flex; flex-direction: column; gap: 12px; padding: 16px; }
+      .controls { display: flex; flex-direction: column; gap: 8px; max-width: 640px; }
+      .controls label { display: flex; gap: 8px; align-items: center; }
+      .controls input:not([type='range']) { flex: 1; font: inherit; padding: 6px 8px; }
+      .row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+      .error { margin: 0; min-height: 1.4em; color: #b00020; }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
