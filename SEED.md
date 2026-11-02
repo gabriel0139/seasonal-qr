@@ -24,7 +24,7 @@ An open-source, client-side creative coding project: a stylised seasonal 3D tree
 - Nothing that serves neither the portfolio nor the community (accounts, monetisation, invasive analytics).
 
 ## Current state
-v2.1 plan written (goal and art direction confirmed). No code yet. First task: flat instanced QR grid + Playwright decode test, then placeholder-tree morph (plan §21).
+QR engine, radial unfold, GPU morph and the CI decode matrix are in. The tree at rest is a lit Blender-built GLB (`public/models/sakura.glb`) with the QR tiles hidden inside it; slots come from `public/trees/sakura.json`. Tiles fly out as the mesh dissolves.
 
 ## Known gotchas
 - R3F's default tone mapping shifts colours and lowers contrast; set it off for final tiles.

@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc -b",
     "test": "vitest run",
-    "test:scan": "playwright test"
+    "test:scan": "playwright test",
+    "tree:build": "/Applications/Blender.app/Contents/MacOS/Blender -b -P tools/tree-build/sakura.py"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",

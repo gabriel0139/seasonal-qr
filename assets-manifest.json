@@ -1,0 +1,10 @@
+[
+  {
+    "path": "public/models/sakura.glb",
+    "slots": "public/trees/sakura.json",
+    "generator": "tools/tree-build/sakura.py",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true
+  }
+]

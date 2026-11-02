@@ -1,7 +1,8 @@
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useMemo } from 'react'
+import { Suspense, useMemo } from 'react'
 import { MathUtils, OrthographicCamera, PerspectiveCamera, Vector2, Vector3 } from 'three'
 import type { TilePair } from '../mapping'
+import { Scenery } from './Scenery'
 import { Tiles } from './Tiles'
 
 type Shared = { value: number }
@@ -26,6 +27,12 @@ export function QrScene(props: Props) {
       <Canvas flat gl={{ antialias: false, preserveDrawingBuffer: true }} dpr={window.devicePixelRatio}>
         <color attach="background" args={['#ffffff']} />
         <Tiles pairs={props.pairs} gridSize={props.gridSize} progress={props.progress} />
+        {/* tree-state lighting only: tiles and petals are unlit, so the scan-ready frame is unaffected */}
+        <ambientLight color="#fff4e8" intensity={1.2} />
+        <directionalLight color="#ffe6c8" intensity={2.2} position={[40, 80, 50]} />
+        <Suspense fallback={null}>
+          <Scenery gridSize={props.gridSize} progress={props.progress} />
+        </Suspense>
         <Rig {...props} />
       </Canvas>
     </div>
@@ -51,11 +58,12 @@ function Rig({ pairs, gridSize, modulePx, progress, rig }: Props) {
 
   const poses = useMemo(() => {
     const h = Math.max(...pairs.map((p) => p.slot.y))
+    const w = Math.max(...pairs.map((p) => Math.hypot(p.slot.x, p.slot.z)))
     const treeTarget = new Vector3(0, h * 0.45, 0)
     // Narrow-FOV perspective that frames the grid like the ortho camera, so the hard switch barely shows.
     const height = gridSize / 2 / Math.tan(MathUtils.degToRad(END_FOV / 2))
     return {
-      from: { pos: new Vector3(0.6, 0.4, 1).setLength(h * 1.7).add(treeTarget), target: treeTarget, up: new Vector3(0, 1, 0), fov: 40 },
+      from: { pos: new Vector3(0.6, 0.4, 1).setLength(Math.max(h, w) * 3.4).add(treeTarget), target: treeTarget, up: new Vector3(0, 1, 0), fov: 40 },
       to: { pos: new Vector3(0, 0.5 + height, 0), target: new Vector3(0, 0.5, 0), up: new Vector3(0, 0, -1), fov: END_FOV },
     }
   }, [pairs, gridSize])

@@ -42,6 +42,12 @@ export function coneSlotCloud(count: number, seed: number): Slot[] {
   return slots.map((s, id) => ({ ...s, id }))
 }
 
+/** First `count` slots of a tree file ([x, y, z, paletteIndex] rows, already in seeded-shuffle order). */
+export function cloudSlots(cloud: { slots: number[][] }, count: number): Slot[] {
+  if (cloud.slots.length < count) throw new Error(`tree has ${cloud.slots.length} slots, need ${count}`)
+  return cloud.slots.slice(0, count).map(([x, y, z, paletteIndex], id) => ({ id, x, y, z, paletteIndex }))
+}
+
 export function qrCells(qr: QrResult): Cell[] {
   const n = qr.size + 2 * QUIET_ZONE
   const lo = QUIET_ZONE

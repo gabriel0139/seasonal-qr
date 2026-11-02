@@ -1,6 +1,7 @@
 import { gsap } from 'gsap'
 import { useMemo, useState } from 'react'
-import { coneSlotCloud, qrCells, radialUnfold } from './mapping'
+import sakura from '../public/trees/sakura.json'
+import { cloudSlots, qrCells, radialUnfold } from './mapping'
 import { encodeQr, gridSize, type QrResult } from './qr'
 import { QrScene } from './scene/QrScene'
 import { Controls } from './ui/Controls'
@@ -20,7 +21,8 @@ const rig = { value: 0 } // camera blend: 0 = tree view, 1 = top-down
 const tl = gsap
   .timeline({ paused: true })
   .fromTo(progress, { value: 0 }, { value: 1, duration: DURATION, ease: 'none' }, 0)
-  .fromTo(rig, { value: 0 }, { value: 1, duration: DURATION * 0.6, ease: 'power2.inOut' }, DURATION * 0.4)
+  // Plan §4: hold the tree view through stamp and unfold, rise to top-down for align, arriving just before the tiles land.
+  .fromTo(rig, { value: 0 }, { value: 1, duration: DURATION * 0.4, ease: 'power3.inOut' }, DURATION * 0.5)
 if (END) tl.progress(1)
 
 /** QrResult, or an error message to show inline. */
@@ -42,7 +44,7 @@ export default function App() {
   const [error, setError] = useState(typeof initial === 'string' ? initial : null)
 
   const size = gridSize(qr.version)
-  const pairs = useMemo(() => radialUnfold(coneSlotCloud(size * size, SEED), qrCells(qr), SEED), [qr, size])
+  const pairs = useMemo(() => radialUnfold(cloudSlots(sakura, size * size), qrCells(qr), SEED), [qr, size])
   const modulePx = Math.max(1, Math.floor((Math.min(640, window.innerWidth - 32) * window.devicePixelRatio) / size))
 
   function onText(next: string) {

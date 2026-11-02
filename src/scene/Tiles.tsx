@@ -2,8 +2,8 @@ import { useEffect, useMemo } from 'react'
 import { BoxGeometry, Color, InstancedBufferAttribute, ShaderMaterial } from 'three'
 import type { TilePair } from '../mapping'
 
-// Placeholder sakura palette, indexed by Slot.paletteIndex: trunk, blossom, pale blossom.
-const PALETTE = ['#6b4a2b', '#e8a0bf', '#f6c9d9'].map((c) => new Color(c))
+// Sakura palette, indexed by Slot.paletteIndex: trunk/branches, deeper pink, blossom, pale blossom.
+export const PALETTE = ['#5c3d2e', '#d9739b', '#efa3c0', '#f9d4e2'].map((c) => new Color(c))
 const DARK = new Color('#1a1a1a')
 const LIGHT = new Color('#ffffff')
 
@@ -18,7 +18,8 @@ const vertexShader = /* glsl */ `
   void main() {
     float t = clamp((uProgress - aDelay) / (1.0 - aDelay), 0.0, 1.0);
     t = t * t * (3.0 - 2.0 * t);
-    vec3 p = mix(aStart, aEnd, t) + position;
+    float e = t - 1.0; // back-out on the eased t: ~4% overshoot, exactly aEnd at t = 1
+    vec3 p = mix(aStart, aEnd, 1.0 + e * e * (2.0 * e + 1.0)) + position;
     p.y += sin(t * 3.14159265) * 2.0; // arc so tiles fly rather than slide
     vColor = mix(aStartColor, aEndColor, t);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);

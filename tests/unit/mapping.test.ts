@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { coneSlotCloud, qrCells, radialUnfold } from '../../src/mapping'
+import { cloudSlots, coneSlotCloud, qrCells, radialUnfold } from '../../src/mapping'
 import { encodeQr, gridSize } from '../../src/qr'
 
 const qr = encodeQr('https://github.com/gabrieljohnliew/seasonal-qr')
@@ -11,6 +11,19 @@ describe('coneSlotCloud', () => {
     expect(coneSlotCloud(500, 7)).toEqual(coneSlotCloud(500, 7))
     expect(coneSlotCloud(500, 7)).not.toEqual(coneSlotCloud(500, 8))
     expect(coneSlotCloud(500, 7).map((s) => s.id)).toEqual([...Array(500).keys()])
+  })
+})
+
+describe('cloudSlots', () => {
+  const cloud = { slots: [[1, 2, 3, 0], [4, 5, 6, 2], [7, 8, 9, 1]] }
+  it('takes the first count slots with sequential ids', () => {
+    expect(cloudSlots(cloud, 2)).toEqual([
+      { id: 0, x: 1, y: 2, z: 3, paletteIndex: 0 },
+      { id: 1, x: 4, y: 5, z: 6, paletteIndex: 2 },
+    ])
+  })
+  it('throws when the cloud is too small', () => {
+    expect(() => cloudSlots(cloud, 4)).toThrow(/need 4/)
   })
 })
 
