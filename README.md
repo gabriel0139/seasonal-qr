@@ -1,7 +1,7 @@
 # seasonal-qr
 A seasonal 3D tree that unfolds into a real, scannable QR code. Built with Three.js and React Three Fiber; runs entirely in your browser.
 
-The tree is a Blender-built model (`public/models/sakura.glb`) with its QR tiles hidden inside; `npm run tree:build` rebuilds it, and Blender is needed only for that.
+Each season is a Blender-built model (`public/models/<id>.glb`) with its QR tiles hidden inside. Four ship: sakura, summer, autumn, winter. `npm run tree:build` rebuilds them all, and Blender is needed only for that.
 
 ## Development
 
@@ -41,7 +41,7 @@ The built-in seasons come from `tools/tree-build/<id>.py` (`npm run tree:build` 
 ### URL parameters
 
 - `?text=<url-encoded payload>` — content to encode (capped at QR version 10, EC level M). A density meter under the input shows the size class, byte count and QR version; the "Download PNG" and "Download SVG" links save the current code.
-- `&season=<id>` — which tree to grow (`sakura`, `autumn`); unknown ids fall back to `sakura`. The Season picker switches it live.
+- `&season=<id>` — which tree to grow (`sakura`, `summer`, `autumn`, `winter`). Without it, or with an unknown id, the site picks the season from today's date (northern hemisphere: sakura from 20 March, summer from 21 June, autumn from 22 September, winter from 21 December). The Season picker switches it live.
 - `&t=end` — jump straight to the scan-ready final frame; used by the Playwright scan tests, which wait for `body[data-ready="true"]`.
 - `&seed=<int>` — deterministic seed for the tree layout and unfold jitter.
 - The same keys also work in the URL fragment (`#text=…&season=…&seed=…`), which takes precedence over the query. "Copy link" produces fragment links, so the payload never reaches a server.

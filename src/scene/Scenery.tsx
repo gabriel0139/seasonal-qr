@@ -77,6 +77,7 @@ export function Scenery({ season, progress }: Props) {
 
   useLayoutEffect(() => {
     for (let i = 0; i < PETALS; i++) petals.current.setColorAt(i, new Color(season.tree[season.petals[i % season.petals.length]]))
+    petals.current.instanceColor!.needsUpdate = true // setColorAt only uploads the buffer it creates on first use
   }, [season])
 
   // Ambient only (plan §4.1): driven by clock time, and by progress just for the fades, crumble and settle.

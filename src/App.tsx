@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { cloudSlots, qrCells, radialUnfold } from './mapping'
 import { encodeQr, gridSize, type QrResult } from './qr'
 import { QrScene } from './scene/QrScene'
-import { DEFAULT_SEASON, seasons, type Season, type SeasonEntry } from './seasons'
+import { seasonFor, seasons, type Season, type SeasonEntry } from './seasons'
 import { deriveSeason } from './seasons/derive'
 import { Controls } from './ui/Controls'
 
@@ -13,7 +13,7 @@ const params = new URLSearchParams(location.search)
 const fragment = new URLSearchParams(location.hash.slice(1)) // share links: fragment wins over query
 const param = (key: string) => fragment.get(key) ?? params.get(key)
 const INITIAL_TEXT = param('text') ?? DEFAULT_TEXT
-const INITIAL_SEASON = seasons[param('season') ?? ''] ?? seasons[DEFAULT_SEASON]
+const INITIAL_SEASON = seasons[param('season') ?? ''] ?? seasons[seasonFor()]
 const END = param('t') === 'end'
 const parsedSeed = Number.parseInt(param('seed') ?? '', 10)
 const SEED = Number.isFinite(parsedSeed) ? parsedSeed : 1

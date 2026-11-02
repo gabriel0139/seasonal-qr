@@ -28,7 +28,19 @@ const list: SeasonEntry[] = [
       finalLight: '#efe6c2',
     },
   },
+  { id: 'summer', name: 'Summer' },
+  { id: 'winter', name: 'Winter', overrides: { petals: [3] } }, // snowflakes
 ]
 
 export const seasons: Record<string, SeasonEntry> = Object.fromEntries(list.map((s) => [s.id, s]))
-export const DEFAULT_SEASON = 'sakura'
+
+// Northern-hemisphere astronomical seasons: equinoxes and solstices rounded to a fixed day
+// (shortcut: the true dates drift by a day with the year; upgrade to a computed equinox if that ever matters).
+const STARTS: [number, number, string][] = [[3, 20, 'sakura'], [6, 21, 'summer'], [9, 22, 'autumn'], [12, 21, 'winter']]
+
+/** The season `date` (local time) falls in; before the spring equinox it is still winter. */
+export function seasonFor(date = new Date()): string {
+  const m = date.getMonth() + 1
+  const d = date.getDate()
+  return STARTS.filter(([sm, sd]) => m > sm || (m === sm && d >= sd)).pop()?.[2] ?? 'winter'
+}

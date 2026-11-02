@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { expect, test } from 'vitest'
-import { seasons } from '../../src/seasons'
+import { seasonFor, seasons } from '../../src/seasons'
 import { deriveSeason, hexToRgb, luma, withLuma } from '../../src/seasons/derive'
 
 const file = (id: string) => `public/trees/${id}.json`
@@ -55,4 +55,20 @@ test('deriveSeason makes 8 darks at one luma and a pale light', () => {
   expect(s.tree).toEqual(palette)
   expect(s.baseSize).toBe(50)
   expect(s.petals).toEqual([1, 2, 3])
+})
+
+test.each([
+  ['2026-01-15', 'winter'],
+  ['2026-03-19', 'winter'],
+  ['2026-03-20', 'sakura'],
+  ['2026-06-20', 'sakura'],
+  ['2026-06-21', 'summer'],
+  ['2026-09-21', 'summer'],
+  ['2026-09-22', 'autumn'],
+  ['2026-12-20', 'autumn'],
+  ['2026-12-21', 'winter'],
+  ['2026-12-31', 'winter'],
+])('seasonFor(%s) is %s', (iso, id) => {
+  expect(seasonFor(new Date(iso + 'T12:00:00'))).toBe(id)
+  expect(seasons[id]).toBeDefined()
 })
