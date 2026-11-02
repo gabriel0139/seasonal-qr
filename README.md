@@ -27,7 +27,7 @@ The JSON carries everything else about the season, `{"name", "baseSize", "palett
 
 - `baseSize`: width of the base top in world units (the landed QR spans it).
 - `slots`: `[x, y, z, p]` points inside the model (GLB space, Y up), `p` the slot class below.
-- `palette`: 8 sRGB hex colours, one per class, from the material that class sits in. The app derives every QR colour from it (tile start colours, the deep landed darks, the pale light), so a season needs no colour code.
+- `palette`: 8 sRGB hex colours, one per class, from the material that class sits in. The app uses them as the tile start colours and, unless the season's registry entry sets `overrides` (`finalDark`, `finalLight`, `petals`), derives the landed QR colours from them (deep darks, pale light), so a new season needs no colour code. The built-in seasons set hand-tuned overrides in `src/seasons/index.ts`; CI decodes either way.
 
 | p | class | | p | class |
 |---|---|---|---|---|
