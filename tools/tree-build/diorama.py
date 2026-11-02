@@ -35,6 +35,11 @@ def srgb(h):  # hex sRGB -> linear RGBA (Principled base colour is linear)
     return tuple(x / 12.92 if x <= 0.04045 else ((x + 0.055) / 1.055) ** 2.4 for x in c) + (1.0,)
 
 
+def to_hex(m):  # material -> its Principled base colour as hex sRGB (the inverse of srgb)
+    c = m.node_tree.nodes['Principled BSDF'].inputs['Base Color'].default_value[:3]
+    return ''.join(f'{round(255 * (x * 12.92 if x <= 0.0031308 else 1.055 * x ** (1 / 2.4) - 0.055)):02x}' for x in c)
+
+
 def material(name, hexrgb, rough=0.8):
     m = bpy.data.materials.new(name)
     m.diffuse_color = srgb(hexrgb)
@@ -563,9 +568,14 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     prop('Flowers', bm, mat('FlowerWhite'), mat('FlowerLavender'), mat('Stem'), centre_mat)
     if extras:
         extras()
+    if not bpy.app.background:  # npm run tree:open: just show the scene, leave the committed assets alone
+        for ob in shells:
+            bpy.data.objects.remove(ob)
+        return
 
     # ---------- slot cloud: rejection-sample inside the volumes ----------
-    # public/trees/<name>.json: {"name": name, "slots": [[x, y, z, p], ...]}, GLB space (Y up), 2 decimals.
+    # public/trees/<name>.json: {"name", "baseSize", "palette", "slots": [[x, y, z, p], ...]}, GLB space (Y up),
+    # 2 decimals. baseSize: width of the base top; palette: hex sRGB per class below, from the material it samples.
     # The final QR is a mosaic of the scene: light modules and the quiet zone take lawn slots (p = 4), dark modules
     # take the rest and keep a deep version of their source colour. Classes p:
     #   0 trunk/branches          (inside Trunk, >= 0.3 deep, above the soil)
@@ -640,8 +650,13 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     keyed = sorted(((i + rng.random()) / len(ps), c, p) for c, ps in pts.items() for i, p in enumerate(ps))
     out = [[round(p.x, 2) + 0.0, round(p.z, 2) + 0.0, round(-p.y, 2) + 0.0, c] for _, c, p in keyed]
     os.makedirs(os.path.dirname(slots_path), exist_ok=True)
+    base_size = round(2 * max(max(abs(v.co.x), abs(v.co.y)) for v in base.data.vertices if v.co.z > -3.0), 2)
+    canopy = blossoms.data.materials  # deep..pale; class 2 takes the second, 3 the palest
+    palette = ['#' + to_hex(ob.data.materials[0]) for ob in (trunk, base, WOOD[0], STONE[0], water)]
+    palette[1:1] = ['#' + to_hex(m) for m in (canopy[0], canopy[1], canopy[-1])]
+    assert palette[4] == '#' + colours['Moss'] and palette[5] == '#' + colours['Wood'], palette  # to_hex round-trips
     with open(slots_path, 'w') as f:
-        json.dump({'name': name, 'slots': out}, f, separators=(',', ':'))
+        json.dump({'name': name, 'baseSize': base_size, 'palette': palette, 'slots': out}, f, separators=(',', ':'))
 
     # self-check: every rounded slot passes its class test again, plus the cross-mesh exclusions
     R, tree = rules(0.02), bvh_t + bvh_b

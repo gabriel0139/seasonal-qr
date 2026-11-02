@@ -21,7 +21,22 @@ QR Code is a registered trademark of DENSO WAVE INCORPORATED.
 
 ### Adding a season
 
-Add an entry to `src/seasons/index.ts` (palette: start colours, deep landed colours, pale light colour) and drop in `public/models/<id>.glb` and `public/trees/<id>.json`. The GLB needs the nodes `Trunk`, `Blossoms`, `Base`, `Props`, `Water`; slot classes are 0 trunk, 1–3 canopy shades, 4 lawn, 5 wood, 6 stone, 7 water. CI decodes every season whose GLB exists, with every payload, so no test changes are needed.
+Add an entry (`id`, `name`) to `src/seasons/index.ts` and drop in `public/models/<id>.glb` and `public/trees/<id>.json`. The GLB needs the nodes `Trunk`, `Blossoms`, `Base`, `Props`, `Water`. CI decodes every season whose GLB exists, with every payload, so no test changes are needed.
+
+The JSON carries everything else about the season, `{"name", "baseSize", "palette", "slots"}`:
+
+- `baseSize`: width of the base top in world units (the landed QR spans it).
+- `slots`: `[x, y, z, p]` points inside the model (GLB space, Y up), `p` the slot class below.
+- `palette`: 8 sRGB hex colours, one per class, from the material that class sits in. The app derives every QR colour from it (tile start colours, the deep landed darks, the pale light), so a season needs no colour code.
+
+| p | class | | p | class |
+|---|---|---|---|---|
+| 0 | trunk | | 4 | lawn |
+| 1 | canopy deep | | 5 | wood |
+| 2 | canopy mid | | 6 | stone |
+| 3 | canopy pale | | 7 | pond water |
+
+The built-in seasons come from `tools/tree-build/<id>.py` (`npm run tree:build` writes both files). `.blend` files are not committed: the scripts are the source. `npm run tree:open -- <season>` opens the built scene in Blender for visual tweaking, without sampling slots or overwriting the committed assets; carry your changes back into the script.
 
 ### URL parameters
 

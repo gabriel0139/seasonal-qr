@@ -7,7 +7,7 @@
     "licence": "CC0-1.0",
     "author": "seasonal-qr contributors",
     "generated": true,
-    "slotsFormat": "{\"name\":\"sakura\",\"slots\":[[x,y,z,p],...]}: GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotsFormat": "{\"name\":\"sakura\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Lantern; wood: Bridge, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
     "slotClasses": {
       "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
       "1": "blossom deep: inside a blossom shell, >= 0.6 deep, lower/inner canopy",
@@ -27,7 +27,7 @@
     "licence": "CC0-1.0",
     "author": "seasonal-qr contributors",
     "generated": true,
-    "slotsFormat": "{\"name\":\"autumn\",\"slots\":[[x,y,z,p],...]}: GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotsFormat": "{\"name\":\"autumn\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Lantern; wood: Bridge, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
     "slotClasses": {
       "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
       "1": "canopy deep: inside a foliage pad, >= 0.6 deep, lower/inner canopy",

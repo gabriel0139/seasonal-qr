@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { cloudSlots, qrCells, radialUnfold } from './mapping'
 import { encodeQr, gridSize, type QrResult } from './qr'
 import { QrScene } from './scene/QrScene'
-import { DEFAULT_SEASON, seasons, type Season } from './seasons'
+import { DEFAULT_SEASON, seasons, type Season, type SeasonEntry } from './seasons'
+import { deriveSeason } from './seasons/derive'
 import { Controls } from './ui/Controls'
 
 // URL contract: docs-contract.md
@@ -41,10 +42,10 @@ function encode(text: string): QrResult | string {
 
 const initial = encode(INITIAL_TEXT)
 
-type Cloud = { slots: number[][] }
+type Cloud = { slots: number[][]; palette: string[]; baseSize: number }
 
 /** The season's slot cloud; throws if its files are missing (the dev server answers 404s with index.html, hence the content-type check). */
-async function load(season: Season): Promise<Cloud> {
+async function load(season: SeasonEntry): Promise<Cloud> {
   const [cloud, glb] = await Promise.all([fetch(`/trees/${season.id}.json`), fetch(`/models/${season.id}.glb`)])
   if (!cloud.ok || !glb.ok || /html/.test(cloud.headers.get('content-type') ?? '') || /html/.test(glb.headers.get('content-type') ?? '')) {
     throw new Error(`missing files for ${season.id}`)
@@ -64,7 +65,7 @@ export default function App() {
     const next = seasons[id]
     load(next).then(
       (cloud) => {
-        setActive({ season: next, cloud })
+        setActive({ season: deriveSeason(next.id, next.name, cloud, next.overrides), cloud })
         setSeasonError(null)
       },
       () => setSeasonError(`Season "${next.name}" is not available yet.`),
