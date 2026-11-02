@@ -1,12 +1,10 @@
 import jsQR from 'jsqr'
 import { PNG } from 'pngjs'
-import {
-  BinaryBitmap,
-  HybridBinarizer,
-  QRCodeReader,
-  RGBLuminanceSource,
-} from '@zxing/library'
+// Default import: Node 22 cannot detect named exports from ZXing's CommonJS bundle (CI failed on it).
+import zxing from '@zxing/library'
 import sharp from 'sharp'
+
+const { BinaryBitmap, HybridBinarizer, QRCodeReader, RGBLuminanceSource } = zxing
 
 export interface DecodeResults {
   jsqr: string | null
