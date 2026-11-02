@@ -1,10 +1,11 @@
 """Render a preview of an exported tree GLB.
-Blender -b -P tools/tree-build/preview.py -- public/models/sakura.glb out.png [camX camY camZ]
+Blender -b -P tools/tree-build/preview.py -- public/models/sakura.glb out.png [camX camY camZ [lookX lookY lookZ]]
 """
 import bpy, math, sys
 from mathutils import Vector
 
-glb, out, *cam_loc = sys.argv[sys.argv.index('--') + 1:]
+glb, out, *view = sys.argv[sys.argv.index('--') + 1:]
+view = tuple(map(float, view))
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=glb)
 scene = bpy.context.scene
@@ -31,7 +32,7 @@ def add(name, data, loc, target=(0, 0, 14)):
 
 cam = bpy.data.cameras.new('Cam')
 cam.lens = 50
-scene.camera = add('Cam', cam, tuple(map(float, cam_loc)) or (88, -98, 66), (0, 0, 16))
+scene.camera = add('Cam', cam, view[:3] or (88, -98, 66), view[3:] or (0, 0, 16))
 for name, kind, energy, loc in (('Key', 'SUN', 2.2, (60, -40, 90)), ('Fill', 'SUN', 0.7, (-80, -60, 30)),
                                 ('Rim', 'SUN', 1.2, (-30, 90, 60))):
     light = bpy.data.lights.new(name, kind)

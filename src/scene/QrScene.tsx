@@ -31,7 +31,7 @@ export function QrScene(props: Props) {
         <ambientLight color="#fff4e8" intensity={1.2} />
         <directionalLight color="#ffe6c8" intensity={2.2} position={[40, 80, 50]} />
         <Suspense fallback={null}>
-          <Scenery gridSize={props.gridSize} progress={props.progress} />
+          <Scenery progress={props.progress} />
         </Suspense>
         <Rig {...props} />
       </Canvas>

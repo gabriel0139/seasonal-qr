@@ -1,6 +1,7 @@
 [
   {
     "path": "public/models/sakura.glb",
+    "description": "Sakura diorama: Trunk, Blossoms and tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, grass, flowers, lily pads)",
     "slots": "public/trees/sakura.json",
     "generator": "tools/tree-build/sakura.py",
     "licence": "CC0-1.0",
