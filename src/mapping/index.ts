@@ -42,10 +42,15 @@ export function coneSlotCloud(count: number, seed: number): Slot[] {
   return slots.map((s, id) => ({ ...s, id }))
 }
 
-/** First `count` slots of a tree file ([x, y, z, paletteIndex] rows, already in seeded-shuffle order). */
-export function cloudSlots(cloud: { slots: number[][] }, count: number): Slot[] {
-  if (cloud.slots.length < count) throw new Error(`tree has ${cloud.slots.length} slots, need ${count}`)
-  return cloud.slots.slice(0, count).map(([x, y, z, paletteIndex], id) => ({ id, x, y, z, paletteIndex }))
+/** First `count` slots of a tree file ([x, y, z, paletteIndex] rows, already in seeded-shuffle order),
+ *  optionally only those whose paletteIndex passes `keep`. Ids are file row indices, unique across calls. */
+export function cloudSlots(cloud: { slots: number[][] }, count: number, keep: (p: number) => boolean = () => true): Slot[] {
+  const slots = cloud.slots
+    .map(([x, y, z, paletteIndex], id) => ({ id, x, y, z, paletteIndex }))
+    .filter((s) => keep(s.paletteIndex))
+    .slice(0, count)
+  if (slots.length < count) throw new Error(`tree has ${slots.length} matching slots, need ${count}`)
+  return slots
 }
 
 export function qrCells(qr: QrResult): Cell[] {
@@ -70,11 +75,14 @@ export function qrCells(qr: QrResult): Cell[] {
 // enough to stay local while wide enough to pair smoothly; it is also simple and deterministic.
 const CHUNK = 64
 
-export function radialUnfold(slots: Slot[], cells: Cell[], seed: number): TilePair[] {
+/** Flight window as a fraction of the timeline; the shader lands a tile at delay + FLIGHT. */
+export const FLIGHT = 0.18
+const FINDER_DELAY = 0.12
+
+export function radialUnfold(slots: Slot[], cells: Cell[], gridSize: number, seed: number): TilePair[] {
   if (slots.length !== cells.length) throw new Error(`slots (${slots.length}) and cells (${cells.length}) differ`)
   const rand = seededRandom(seed)
-  const n = Math.sqrt(cells.length)
-  const c = (n - 1) / 2
+  const c = (gridSize - 1) / 2 // cells may be a subset of the grid
   const radius = (k: Cell) => Math.hypot(k.col - c, k.row - c)
   const angle = (k: Cell) => Math.atan2(k.row - c, k.col - c)
   const azimuth = (s: Slot) => Math.atan2(s.z, s.x)
@@ -83,7 +91,7 @@ export function radialUnfold(slots: Slot[], cells: Cell[], seed: number): TilePa
   const byHeight = [...slots].sort((a, b) => b.y - a.y || a.id - b.id)
   const finderCells = cells.filter((k) => k.finder).sort((a, b) => angle(a) - angle(b))
   const finderSlots = byHeight.slice(0, finderCells.length).sort((a, b) => azimuth(a) - azimuth(b))
-  const pairs: TilePair[] = finderCells.map((cell, i) => ({ slot: finderSlots[i], cell, delay: 0 }))
+  const pairs: TilePair[] = finderCells.map((cell, i) => ({ slot: finderSlots[i], cell, delay: FINDER_DELAY }))
 
   const s = byHeight.slice(finderCells.length).reverse()
   const g = cells.filter((k) => !k.finder).sort((a, b) => radius(a) - radius(b))
@@ -91,8 +99,9 @@ export function radialUnfold(slots: Slot[], cells: Cell[], seed: number): TilePa
     const sChunk = s.slice(i, i + CHUNK).sort((a, b) => azimuth(a) - azimuth(b))
     const gChunk = g.slice(i, i + CHUNK).sort((a, b) => angle(a) - angle(b))
     gChunk.forEach((cell, j) => {
-      const delay = 0.15 + 0.75 * (radius(cell) / rMax) + rand() * 0.05
-      pairs.push({ slot: sChunk[j], cell, delay: Math.min(delay, 0.979) })
+      const delay = 0.28 + 0.44 * (radius(cell) / rMax) + rand() * 0.03
+      // cap so the last tile lands by 0.92, leaving the rest for the camera align
+      pairs.push({ slot: sChunk[j], cell, delay: Math.min(delay, 0.74) })
     })
   }
   return pairs

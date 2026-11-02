@@ -22,6 +22,6 @@ export interface Cell {
 export interface TilePair {
   slot: Slot
   cell: Cell
-  /** normalised start delay in [0, 1): a tile animates over local t = (progress - delay) / (1 - delay) */
+  /** timeline fraction when the tile starts moving; it lands at delay + FLIGHT (FLIGHT = 0.18, a shader constant) */
   delay: number
 }

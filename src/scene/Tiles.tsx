@@ -1,11 +1,13 @@
 import { useEffect, useMemo } from 'react'
 import { BoxGeometry, Color, InstancedBufferAttribute, ShaderMaterial } from 'three'
-import type { TilePair } from '../mapping'
+import { FLIGHT, type TilePair } from '../mapping'
 
-// Sakura palette, indexed by Slot.paletteIndex: trunk/branches, deeper pink, blossom, pale blossom.
-export const PALETTE = ['#5c3d2e', '#d9739b', '#efa3c0', '#f9d4e2'].map((c) => new Color(c))
-const DARK = new Color('#1a1a1a')
-const LIGHT = new Color('#ffffff')
+import { sakura } from '../seasons/sakura'
+
+const colors = (hex: string[]) => hex.map((c) => new Color(c))
+export const PALETTE = colors(sakura.tree)
+const FINAL_DARK = colors(sakura.finalDark)
+const FINAL_LIGHT = new Color(sakura.finalLight)
 
 const vertexShader = /* glsl */ `
   attribute vec3 aStart;
@@ -14,14 +16,17 @@ const vertexShader = /* glsl */ `
   attribute vec3 aStartColor;
   attribute vec3 aEndColor;
   uniform float uProgress;
+  uniform float uScale;
   varying vec3 vColor;
   void main() {
-    float t = clamp((uProgress - aDelay) / (1.0 - aDelay), 0.0, 1.0);
+    float t = clamp((uProgress - aDelay) / float(FLIGHT), 0.0, 1.0); // every tile flies for FLIGHT, landing at aDelay + FLIGHT
     t = t * t * (3.0 - 2.0 * t);
     float e = t - 1.0; // back-out on the eased t: ~4% overshoot, exactly aEnd at t = 1
-    vec3 p = mix(aStart, aEnd, 1.0 + e * e * (2.0 * e + 1.0)) + position;
+    vec3 p = mix(aStart, aEnd, 1.0 + e * e * (2.0 * e + 1.0)) + position * mix(1.0, uScale, t); // 1 unit while hidden in the mesh, exactly uScale once landed
     p.y += sin(t * 3.14159265) * 2.0; // arc so tiles fly rather than slide
-    vColor = mix(aStartColor, aEndColor, t);
+    // Lambert from the directional light in QrScene so flying tiles read as boxes; exactly 1 once landed (plan §5.4).
+    float shade = 0.65 + 0.35 * max(dot(normal, normalize(vec3(40.0, 80.0, 50.0))), 0.0);
+    vColor = mix(aStartColor, aEndColor, t) * mix(shade, 1.0, t);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }
 `
@@ -44,13 +49,14 @@ interface Props {
 
 export function Tiles({ pairs, gridSize, progress }: Props) {
   const material = useMemo(
-    () => new ShaderMaterial({ uniforms: { uProgress: progress }, vertexShader, fragmentShader }),
-    [progress],
+    () => new ShaderMaterial({ uniforms: { uProgress: progress, uScale: { value: sakura.baseSize / gridSize } }, defines: { FLIGHT }, vertexShader, fragmentShader }),
+    [progress, gridSize],
   )
 
   const geometry = useMemo(() => {
     const n = pairs.length
     const c = (gridSize - 1) / 2
+    const s = sakura.baseSize / gridSize
     const start = new Float32Array(n * 3)
     const end = new Float32Array(n * 3)
     const delay = new Float32Array(n)
@@ -58,12 +64,11 @@ export function Tiles({ pairs, gridSize, progress }: Props) {
     const endColor = new Float32Array(n * 3)
     pairs.forEach(({ slot, cell, delay: d }, i) => {
       start.set([slot.x, slot.y, slot.z], i * 3)
-      // Grid centred on the origin, one module per world unit; dark modules land raised.
-      end.set([cell.col - c, cell.dark ? 0.5 : 0, cell.row - c], i * 3)
+      // Grid centred on the origin spanning baseSize, bottoms flush on the base top (y = -0.5); dark modules raised s/2.
+      end.set([(cell.col - c) * s, s / 2 - 0.5 + (cell.dark ? s / 2 : 0), (cell.row - c) * s], i * 3)
       delay[i] = d
-      PALETTE[slot.paletteIndex % PALETTE.length].toArray(startColor, i * 3)
-      const finalColor = cell.dark ? DARK : LIGHT
-      finalColor.toArray(endColor, i * 3)
+      PALETTE[slot.paletteIndex].toArray(startColor, i * 3)
+      ;(cell.dark ? FINAL_DARK[slot.paletteIndex] : FINAL_LIGHT).toArray(endColor, i * 3)
     })
     const g = new BoxGeometry(1, 1, 1) // exact 1×1 footprint: zero gaps between neighbours (plan §5.5)
     g.setAttribute('aStart', new InstancedBufferAttribute(start, 3))

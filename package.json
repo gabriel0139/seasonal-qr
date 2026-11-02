@@ -11,6 +11,7 @@
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:scan": "playwright test",
+    "reveal:strip": "node tools/reveal-strip.mjs",
     "tree:build": "/Applications/Blender.app/Contents/MacOS/Blender -b -P tools/tree-build/sakura.py"
   },
   "dependencies": {

@@ -2,6 +2,7 @@ import { Canvas, useFrame } from '@react-three/fiber'
 import { Suspense, useMemo } from 'react'
 import { MathUtils, OrthographicCamera, PerspectiveCamera, Vector2, Vector3 } from 'three'
 import type { TilePair } from '../mapping'
+import { sakura } from '../seasons/sakura'
 import { Scenery } from './Scenery'
 import { Tiles } from './Tiles'
 
@@ -25,7 +26,7 @@ export function QrScene(props: Props) {
   return (
     <div style={{ width: css, height: css }}>
       <Canvas flat gl={{ antialias: false, preserveDrawingBuffer: true }} dpr={window.devicePixelRatio}>
-        <color attach="background" args={['#ffffff']} />
+        <color attach="background" args={[sakura.finalLight]} />
         <Tiles pairs={props.pairs} gridSize={props.gridSize} progress={props.progress} />
         {/* tree-state lighting only: tiles and petals are unlit, so the scan-ready frame is unaffected */}
         <ambientLight color="#fff4e8" intensity={1.2} />
@@ -61,7 +62,7 @@ function Rig({ pairs, gridSize, modulePx, progress, rig }: Props) {
     const w = Math.max(...pairs.map((p) => Math.hypot(p.slot.x, p.slot.z)))
     const treeTarget = new Vector3(0, h * 0.45, 0)
     // Narrow-FOV perspective that frames the grid like the ortho camera, so the hard switch barely shows.
-    const height = gridSize / 2 / Math.tan(MathUtils.degToRad(END_FOV / 2))
+    const height = sakura.baseSize / 2 / Math.tan(MathUtils.degToRad(END_FOV / 2))
     return {
       from: { pos: new Vector3(0.6, 0.4, 1).setLength(Math.max(h, w) * 3.4).add(treeTarget), target: treeTarget, up: new Vector3(0, 1, 0), fov: 40 },
       to: { pos: new Vector3(0, 0.5 + height, 0), target: new Vector3(0, 0.5, 0), up: new Vector3(0, 0, -1), fov: END_FOV },
@@ -74,10 +75,11 @@ function Rig({ pairs, gridSize, modulePx, progress, rig }: Props) {
       // Anchor the frustum at the grid's top-left edge so modules start on whole device pixels,
       // even if the drawing buffer rounds a pixel off; any excess is letterboxed in the background colour.
       gl.getDrawingBufferSize(buffer)
-      ortho.left = -gridSize / 2
-      ortho.right = ortho.left + buffer.x / modulePx
-      ortho.top = gridSize / 2
-      ortho.bottom = ortho.top - buffer.y / modulePx
+      const s = sakura.baseSize / gridSize // world size of one module
+      ortho.left = -sakura.baseSize / 2
+      ortho.right = ortho.left + (buffer.x / modulePx) * s
+      ortho.top = sakura.baseSize / 2
+      ortho.bottom = ortho.top - (buffer.y / modulePx) * s
       ortho.updateProjectionMatrix()
     } else {
       const { from, to } = poses

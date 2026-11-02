@@ -21,8 +21,8 @@ const rig = { value: 0 } // camera blend: 0 = tree view, 1 = top-down
 const tl = gsap
   .timeline({ paused: true })
   .fromTo(progress, { value: 0 }, { value: 1, duration: DURATION, ease: 'none' }, 0)
-  // Plan §4: hold the tree view through stamp and unfold, rise to top-down for align, arriving just before the tiles land.
-  .fromTo(rig, { value: 0 }, { value: 1, duration: DURATION * 0.4, ease: 'power3.inOut' }, DURATION * 0.5)
+  // Plan §4: hold the tree view through settle, stamp and unfold; rise to top-down during align (72–92%).
+  .fromTo(rig, { value: 0 }, { value: 1, duration: DURATION * 0.2, ease: 'power3.inOut' }, DURATION * 0.72)
 if (END) tl.progress(1)
 
 /** QrResult, or an error message to show inline. */
@@ -44,7 +44,16 @@ export default function App() {
   const [error, setError] = useState(typeof initial === 'string' ? initial : null)
 
   const size = gridSize(qr.version)
-  const pairs = useMemo(() => radialUnfold(cloudSlots(sakura, size * size), qrCells(qr), SEED), [qr, size])
+  // Mosaic: dark modules take non-lawn tiles (tree, props), light modules and the quiet zone take lawn (palette index 4).
+  const pairs = useMemo(() => {
+    const cells = qrCells(qr)
+    const dark = cells.filter((c) => c.dark)
+    const light = cells.filter((c) => !c.dark)
+    return [
+      ...radialUnfold(cloudSlots(sakura, dark.length, (p) => p !== 4), dark, size, SEED),
+      ...radialUnfold(cloudSlots(sakura, light.length, (p) => p === 4), light, size, SEED),
+    ]
+  }, [qr, size])
   const modulePx = Math.max(1, Math.floor((Math.min(640, window.innerWidth - 32) * window.devicePixelRatio) / size))
 
   function onText(next: string) {
@@ -58,7 +67,7 @@ export default function App() {
   return (
     <main>
       <QrScene pairs={pairs} gridSize={size} modulePx={modulePx} progress={progress} rig={rig} />
-      {!END && <Controls tl={tl} text={text} error={error} qr={qr} onText={onText} />}
+      {!END && <Controls tl={tl} text={text} error={error} qr={qr} onText={onText} pairs={pairs} />}
     </main>
   )
 }

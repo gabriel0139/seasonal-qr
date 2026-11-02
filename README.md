@@ -10,6 +10,7 @@ npm ci                 # install dependencies
 npm run dev            # start the dev server
 npm test               # unit tests (vitest)
 npm run test:scan      # scan tests: render, then decode with two independent decoders
+npm run reveal:strip   # renders the reveal as a frame strip for review
 ```
 
 The scan test renders each payload in headless Chromium, then checks that both jsQR and ZXing decode the exact text, both from the canvas and from a degraded (downscaled, blurred, JPEG) copy that mimics a phone camera.

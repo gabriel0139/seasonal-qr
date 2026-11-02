@@ -4,7 +4,8 @@ Run from the repo root: npm run tree:build (Blender 5.2, headless). Deterministi
 Units: 1 Blender unit = 1 QR module. Blender is Z up; the glTF exporter writes Y up,
 so a Blender point (x, y, z) is (x, z, -y) in the GLB and in the slot file.
 GLB roots: Trunk, Blossoms, Base (top at y = 0, 72 x 72, 7 deep) and Props, an empty whose children are
-the scenery meshes (Water is the only transparent one). Slots lie only inside Trunk and Blossoms.
+the scenery meshes (Water is the only transparent one). Slots lie inside the tree, the lawn, the bridge,
+the stone props and the pond; the slot file contract is at the top of the slot-cloud section below.
 """
 import bpy, bmesh, bisect, json, math, os, random, sys, traceback
 from mathutils import Vector, Matrix, Euler, noise
@@ -14,7 +15,6 @@ SEED = 20261102
 ROOT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..'))
 GLB = os.path.join(ROOT, 'public', 'models', 'sakura.glb')
 SLOTS = os.path.join(ROOT, 'public', 'trees', 'sakura.json')
-N_SLOTS, TRUNK_SHARE = 4600, 0.07
 MARGIN_TRUNK, MARGIN_BLOSSOM = 0.3, 0.6  # min distance from a slot to the surface
 Z = Vector((0, 0, 1))
 TREE = Vector((-12.0, 8.0, 0.0))  # left rear, glTF (-12, 0, -8): the pond, bridge and lantern take the front right
@@ -602,14 +602,30 @@ prop('Flowers', bm, material('FlowerWhite', 'faf7f0'), material('FlowerLavender'
      centre_mat)
 
 # ---------- slot cloud: rejection-sample inside the volumes ----------
+# public/trees/sakura.json: {"name": "sakura", "slots": [[x, y, z, p], ...]}, GLB space (Y up), 2 decimals.
+# The final QR is a mosaic of the scene: light modules and the quiet zone take lawn slots (p = 4), dark modules
+# take the rest and keep a deep version of their source colour. Classes p:
+#   0 trunk/branches          (inside Trunk, >= 0.3 deep, above the soil)
+#   1-3 blossoms deep..pale   (inside a blossom shell, >= 0.6 deep; 1 lower/inner, 3 upper/outer)
+#   4 lawn                    (inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin,
+#                              >= 0.5 clear of the trunk and every prop)
+#   5 wood                    (inside Bridge, >= 0.5 deep, y >= 0.5)
+#   6 stone                   (inside Lantern or Rocks, >= 0.5 deep, y >= 0.5)
+#   7 pond water              (in the basin under Water, >= 0.5 from the surface, the bed and every prop)
+# A prop class with no room at its margin gets no slots and its share goes to the blossoms (the bridge's
+# planks, rails and posts are all under 0.5 thick, so p = 5 is empty today). One seeded shuffle over all
+# slots, stratified by class, so every prefix keeps the class proportions.
+N_LAWN, N_SOLID = 3000, 2000
+SHARES = {0: 0.08, 5: 0.08, 6: 0.10, 7: 0.04}  # of N_SOLID; blossoms (~70%) take the rest
+MARGIN_PROP, MARGIN_LAWN, POND_CLEAR = 0.5, 0.6, 1.0
 DIRS = [Vector(d).normalized() for d in ((1, 0.37, 0.21), (-0.29, 1, 0.43), (0.31, -0.17, 1))]
 
 
-def bvh_of(*obs):
+def bvh_of(*obs, keep=None):  # keep: optional polygon filter
     vs, polys = [], []
     for ob in obs:
         assert ob.matrix_world == Matrix.Identity(4)  # local space == world space
-        polys += [[i + len(vs) for i in p.vertices] for p in ob.data.polygons]
+        polys += [[i + len(vs) for i in p.vertices] for p in ob.data.polygons if keep is None or keep(p)]
         vs += [v.co.copy() for v in ob.data.vertices]
     return BVHTree.FromPolygons(vs, polys)
 
@@ -632,16 +648,25 @@ def normal_inside(bvh, p, margin):  # independent check: closest point, normal s
     return co is not None and (co - p).dot(nor) > 0 and dist >= margin
 
 
-def sample(ob, bvhs, count, margin, zmin):  # inside the union of the shells, at least margin deep in one
-    # both inside tests must agree: decimating the floret-covered shells folds a few triangles, fooling either alone
-    vs = [v.co for v in ob.data.vertices]
+def inside(p, bvhs, margin):  # in one of the closed meshes, at least margin deep
+    # both tests must agree: decimating the floret-covered shells folds a few triangles, fooling either alone
+    return any(normal_inside(b, p, margin) and parity_inside(b, p) for b in bvhs)
+
+
+def clear(p, bvhs, margin):  # outside every mesh, at least margin from its surface
+    return all(b.find_nearest(p)[3] >= margin and not parity_inside(b, p) for b in bvhs)
+
+
+def sample(obs, count, ok, zlo=None, zhi=None, tries=None):  # uniform rejection sampling in the objects' box
+    vs = [v.co for ob in obs for v in ob.data.vertices]
     lo = Vector([min(v[i] for v in vs) for i in range(3)])
     hi = Vector([max(v[i] for v in vs) for i in range(3)])
-    lo.z = max(lo.z, zmin)
-    out = []
-    while len(out) < count:
+    lo.z, hi.z = lo.z if zlo is None else zlo, hi.z if zhi is None else zhi
+    out, n = [], 0
+    while len(out) < count and n != tries:
+        n += 1
         p = Vector([rng.uniform(lo[i], hi[i]) for i in range(3)])
-        if any(normal_inside(b, p, margin) and parity_inside(b, p) for b in bvhs):
+        if ok(p):
             out.append(p)
     return out
 
@@ -651,9 +676,41 @@ for ob in shells:
     bpy.data.objects.remove(ob)
 for t in tips:  # every branch must end buried in a blossom cluster
     assert any(parity_inside(b, t) and b.find_nearest(t)[3] > 1.0 for b in bvh_b), ('bare branch tip', t)
-n_trunk = round(N_SLOTS * TRUNK_SHARE)
-trunk_pts = sample(trunk, bvh_t, n_trunk, MARGIN_TRUNK, 0.3)  # only above the soil
-bloom_pts = sample(blossoms, bvh_b, N_SLOTS - n_trunk, MARGIN_BLOSSOM, -1e9)
+prop_obs = list(props.children)
+solid = [bvh_of(*[ob for ob in prop_obs if ob != water])]
+bvh_bed, bvh_chunk, bvh_water = (bvh_of(base, keep=lambda f: f.material_index == 2),
+                                 bvh_of(base, keep=lambda f: f.material_index == 3), bvh_of(water))
+# the upper slab only: the lower tier's top (z = -3.1) and the chunks sit inside it, and those hidden faces would be
+# the nearest surface for lawn slots below z = -1.55, fooling the closest-point test (rays all point up, so parity
+# never sees the dropped faces)
+bvh_base = bvh_of(base, keep=lambda f: f.center.z > -3.0)
+WOOD, STONE = [bpy.data.objects['Bridge']], [bpy.data.objects['Lantern'], bpy.data.objects['Rocks']]
+bvh_wood, bvh_stone = [bvh_of(ob) for ob in WOOD], [bvh_of(ob) for ob in STONE]
+
+
+def rules(e):  # class -> slot test; e loosens the margins to re-test the rounded slots
+    r = {0: lambda p: p.z >= 0.3 - e and inside(p, bvh_t, MARGIN_TRUNK - e),  # only above the soil
+         1: lambda p: inside(p, bvh_b, MARGIN_BLOSSOM - e),
+         4: lambda p: (-2.2 - e <= p.z <= -0.6 + e and pond_gap(p) > POND_CLEAR - e  # not under the basin
+                       and bvh_bed.find_nearest(p)[3] >= POND_CLEAR - e and inside(p, [bvh_base], MARGIN_LAWN - e)
+                       and clear(p, solid + bvh_t, MARGIN_PROP - e)),
+         5: lambda p: p.z >= 0.5 - e and inside(p, bvh_wood, MARGIN_PROP - e),  # tile clear of the lawn
+         6: lambda p: p.z >= 0.5 - e and inside(p, bvh_stone, MARGIN_PROP - e),
+         7: lambda p: (pond_gap(p) < 0 and bvh_water.ray_cast(p, Z)[0] is not None  # under the surface
+                       and bvh_water.find_nearest(p)[3] >= MARGIN_PROP - e
+                       and clear(p, [bvh_base] + solid, MARGIN_PROP - e))}  # above the bed, off piers and bank
+    r[2] = r[3] = r[1]
+    return r
+
+
+RULE, want = rules(0.0), {c: round(N_SOLID * s) for c, s in SHARES.items()}
+# shortcut: a prop class with nothing found in 1e6 tries counts as having no room; partial fills fail the check below
+pts = {0: sample([trunk], want[0], RULE[0], zlo=0.3),
+       5: sample(WOOD, want[5], RULE[5], zlo=0.5, tries=10 ** 6),
+       6: sample(STONE, want[6], RULE[6], zlo=0.5, tries=10 ** 6),
+       7: sample([water], want[7], RULE[7], zlo=-1.7, zhi=0.0, tries=10 ** 6)}
+bloom_pts = sample([blossoms], N_SOLID - sum(map(len, pts.values())), RULE[1])
+pts[4] = sample([base], N_LAWN, RULE[4], zlo=-2.2, zhi=-0.6)
 
 # shade: distance from the canopy's bottom centre, so 3 (palest) lands upper/outer and 1 (deepest) lower/inner
 cx = sum(p.x for p in bloom_pts) / len(bloom_pts)
@@ -666,31 +723,47 @@ rank = sorted(range(len(bloom_pts)), key=score.__getitem__)
 shade = [0] * len(bloom_pts)
 for r, i in enumerate(rank):
     shade[i] = 1 if r < 0.3 * len(rank) else 2 if r < 0.7 * len(rank) else 3
+for p, s in zip(bloom_pts, shade):
+    pts.setdefault(s, []).append(p)
 
-slots = [(p, 0) for p in trunk_pts] + list(zip(bloom_pts, shade))
-rng.shuffle(slots)  # any prefix covers the whole tree evenly (plan §3.2)
-out = [[round(p.x, 2) + 0.0, round(p.z, 2) + 0.0, round(-p.y, 2) + 0.0, s] for p, s in slots]
+# one seeded shuffle, stratified: class c's i-th slot (already in random order) gets key (i + u) / n_c, so any
+# prefix keeps the class proportions and covers each volume evenly (plan §3.2)
+keyed = sorted(((i + rng.random()) / len(ps), c, p) for c, ps in pts.items() for i, p in enumerate(ps))
+out = [[round(p.x, 2) + 0.0, round(p.z, 2) + 0.0, round(-p.y, 2) + 0.0, c] for _, c, p in keyed]
 os.makedirs(os.path.dirname(SLOTS), exist_ok=True)
 with open(SLOTS, 'w') as f:
     json.dump({'name': 'sakura', 'slots': out}, f, separators=(',', ':'))
 
-# self-check: re-test a random sample of the rounded slots with the independent closest-point test
-for x, y, z, s in random.Random(1).sample(out, 600):
+# self-check: every rounded slot passes its class test again, plus the cross-mesh exclusions
+R, tree = rules(0.02), bvh_t + bvh_b
+for x, y, z, c in out:
     p = Vector((x, -z, y))
-    bvhs, margin = (bvh_t, MARGIN_TRUNK) if s == 0 else (bvh_b, MARGIN_BLOSSOM)
-    assert any(normal_inside(b, p, margin - 0.02) for b in bvhs), (x, y, z, s)
-assert len(out) >= 4400 and sum(s == 0 for *_, s in out) == n_trunk
+    assert R[c](p), ('slot fails its class test', x, y, z, c)
+    # not bvh_of(all props): Water is an open disc, and slanted rays from the lawn beside the pond cross it
+    assert clear(p, solid, 0.3) if c <= 4 else clear(p, tree, 0.0), ('slot inside another mesh', x, y, z, c)
+    assert c != 4 or clear(p, [bvh_chunk], MARGIN_PROP), ('lawn slot in a rock chunk', x, y, z)
+
+# self-check: counts, shares and prefixes (the v10 grid needs about 1,650 dark and 2,575 light cells)
+P = [c for *_, c in out]
+n = {c: P.count(c) for c in range(8)}
+dark = len(P) - n[4]
+assert n[4] >= N_LAWN >= 2700 and dark >= N_SOLID >= 1700, n
+assert n[0] == want[0] and n[6] == want[6] and n[5] in (0, want[5]) and n[7] in (0, want[7]), (n, want)
+assert all(abs(n[s] - share * (n[1] + n[2] + n[3])) <= 1 for s, share in ((1, 0.3), (2, 0.4), (3, 0.3))), n
+for T in (1089, 2025, 4225):
+    for c in range(8):
+        assert abs(P[:T].count(c) / T - n[c] / len(P)) < 0.02, ('prefix loses the class mix', T, c)
+for c in range(8):
+    ys = [y for _, y, _, s in out if s == c]
+    print('SAKURA class', c, n[c], f'{100 * n[c] / len(P):.1f}% of all',
+          '' if c == 4 else f'{100 * n[c] / dark:.1f}% of non-lawn', (min(ys), max(ys)) if ys else 'empty')
 
 # self-check: the props and base contracts
-prop_obs = list(props.children)
 for ob in prop_obs:
     vs = [v.co for v in ob.data.vertices]
     assert all(max(abs(v.x), abs(v.y)) <= 36 and -2 <= v.z <= 14 for v in vs), ('prop outside the base', ob.name)
     assert min((flat(v) - flat(FOOT)).length for v in vs) > 7, ('prop in the trunk area', ob.name)
 assert [m.name for m in water.data.materials] == ['Water'] and all(0 <= v.co.z <= 0.1 for v in water.data.vertices)
-bvh_p = bvh_of(*prop_obs)
-assert not any(parity_inside(bvh_p, Vector((x, -z, y))) or bvh_p.find_nearest(Vector((x, -z, y)))[3] < 0.3
-               for x, y, z, _ in out), 'a slot lies inside a prop'
 bv = [v.co for v in base.data.vertices]
 assert max(v.z for v in bv) <= 1e-4 and min(v.z for v in bv) >= -8 and max(max(abs(v.x), abs(v.y)) for v in bv) <= 36
 
@@ -717,4 +790,4 @@ assert sum(counts.values()) < 250000 and len(glb) < 5e6, (sum(counts.values()), 
 
 print('SAKURA tris', counts, 'total', sum(counts.values()))
 print('SAKURA glb bytes', len(glb))
-print('SAKURA slots', len(out), {p: sum(s == p for *_, s in out) for p in range(4)})
+print('SAKURA slots', len(out), n)

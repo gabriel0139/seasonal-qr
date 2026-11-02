@@ -1,37 +1,50 @@
 import { useEffect, useMemo, useState } from 'react'
+import type { TilePair } from '../mapping'
 import { density, MAX_VERSION, QUIET_ZONE, type QrResult } from '../qr'
+import { sakura } from '../seasons/sakura'
 
 interface Props {
   tl: gsap.core.Timeline
   text: string
   error: string | null
   qr: QrResult
+  pairs: TilePair[]
   onText: (text: string) => void
 }
 
-/** Flat SVG of the same matrix the tiles show (plan §5.9 fallback). */
-function qrSvg({ size, modules }: QrResult): string {
-  const g = size + 2 * QUIET_ZONE
-  let d = ''
-  modules.forEach((m, i) => {
-    if (m) d += `M${(i % size) + QUIET_ZONE} ${Math.floor(i / size) + QUIET_ZONE}h1v1h-1z`
-  })
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g} ${g}" shape-rendering="crispEdges"><rect width="${g}" height="${g}" fill="#fff"/><path d="${d}" fill="#1a1a1a"/></svg>`
+/** Dark modules grouped by mosaic colour, as [col, row] in grid coordinates (quiet zone included). */
+function darkByColour(pairs: TilePair[]): Map<string, number[][]> {
+  const by = new Map<string, number[][]>()
+  for (const { cell, slot } of pairs) {
+    if (!cell.dark) continue
+    const colour = sakura.finalDark[slot.paletteIndex]
+    by.set(colour, [...(by.get(colour) ?? []), [cell.col, cell.row]])
+  }
+  return by
 }
 
-/** Flat PNG at 10 px per module, same module loop as qrSvg. */
-function qrPng({ size, modules }: QrResult): string {
+/** Flat SVG of the same mosaic the tiles show (plan §5.9 fallback). */
+function qrSvg({ size }: QrResult, pairs: TilePair[]): string {
+  const g = size + 2 * QUIET_ZONE
+  const paths = [...darkByColour(pairs)]
+    .map(([colour, cs]) => `<path d="${cs.map(([c, r]) => `M${c} ${r}h1v1h-1z`).join('')}" fill="${colour}"/>`)
+    .join('')
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${g} ${g}" shape-rendering="crispEdges"><rect width="${g}" height="${g}" fill="${sakura.finalLight}"/>${paths}</svg>`
+}
+
+/** Flat PNG at 10 px per module, same mosaic as qrSvg. */
+function qrPng({ size }: QrResult, pairs: TilePair[]): string {
   const px = 10
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = (size + 2 * QUIET_ZONE) * px
   const ctx = canvas.getContext('2d')
   if (!ctx) return '' // no canvas support (e.g. jsdom without the canvas package)
-  ctx.fillStyle = '#fff'
+  ctx.fillStyle = sakura.finalLight
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-  ctx.fillStyle = '#1a1a1a'
-  modules.forEach((m, i) => {
-    if (m) ctx.fillRect((i % size + QUIET_ZONE) * px, (Math.floor(i / size) + QUIET_ZONE) * px, px, px)
-  })
+  for (const [colour, cs] of darkByColour(pairs)) {
+    ctx.fillStyle = colour
+    for (const [c, r] of cs) ctx.fillRect(c * px, r * px, px, px)
+  }
   return canvas.toDataURL('image/png')
 }
 
@@ -39,7 +52,7 @@ const LABELS = ['Short', 'Medium', 'Dense'] as const
 /** Byte-mode capacity of version 10 at EC level M. */
 const MAX_BYTES = 213
 
-export function Controls({ tl, text, error, qr, onText }: Props) {
+export function Controls({ tl, text, error, qr, pairs, onText }: Props) {
   const [progress, setProgress] = useState(tl.progress())
   const [revealing, setRevealing] = useState(false)
 
@@ -48,8 +61,8 @@ export function Controls({ tl, text, error, qr, onText }: Props) {
     return () => void tl.eventCallback('onUpdate', null)
   }, [tl])
 
-  const svgHref = useMemo(() => `data:image/svg+xml,${encodeURIComponent(qrSvg(qr))}`, [qr])
-  const pngHref = useMemo(() => qrPng(qr), [qr])
+  const svgHref = useMemo(() => `data:image/svg+xml,${encodeURIComponent(qrSvg(qr, pairs))}`, [qr, pairs])
+  const pngHref = useMemo(() => qrPng(qr, pairs), [qr, pairs])
   const info = useMemo(() => density(text), [text])
   const summary =
     info.label === 'Too long'
