@@ -1,9 +1,9 @@
 import { useGLTF } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
 import { useLayoutEffect, useMemo, useRef } from 'react'
-import { Box3, DoubleSide, type Group, type InstancedMesh, type Material, MathUtils, MeshBasicMaterial, type Mesh, type MeshStandardMaterial, Object3D } from 'three'
+import { Box3, Color, DoubleSide, type Group, type InstancedMesh, type Material, MathUtils, MeshBasicMaterial, type Mesh, type MeshStandardMaterial, Object3D } from 'three'
 import { seededRandom } from '../mapping'
-import { PALETTE } from './Tiles'
+import type { Season } from '../seasons'
 
 const PETALS = 200
 const petalMaterial = new MeshBasicMaterial({ side: DoubleSide, transparent: true })
@@ -28,12 +28,13 @@ const crumble: Material['onBeforeCompile'] = (shader) => {
 }
 
 interface Props {
+  season: Season
   progress: { value: number }
 }
 
 /** The sculpted tree and base plus falling petals for the tree view. Never part of the QR: faded out, then hidden in the scan-ready frame (plan §5.6). */
-export function Scenery({ progress }: Props) {
-  const { scene } = useGLTF('/models/sakura.glb')
+export function Scenery({ season, progress }: Props) {
+  const { scene } = useGLTF(`/models/${season.id}.glb`)
   // Multi-material meshes load as groups of meshes, so collect materials per named part.
   const parts = useMemo(() => {
     const get = (name: string) => {
@@ -75,8 +76,8 @@ export function Scenery({ progress }: Props) {
   }, [])
 
   useLayoutEffect(() => {
-    for (let i = 0; i < PETALS; i++) petals.current.setColorAt(i, PALETTE[1 + (i % 3)])
-  }, [])
+    for (let i = 0; i < PETALS; i++) petals.current.setColorAt(i, new Color(season.tree[season.petals[i % season.petals.length]]))
+  }, [season])
 
   // Ambient only (plan §4.1): driven by clock time, and by progress just for the fades, crumble and settle.
   useFrame(({ clock }, delta) => {

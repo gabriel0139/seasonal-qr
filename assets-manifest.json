@@ -3,7 +3,7 @@
     "path": "public/models/sakura.glb",
     "description": "Sakura diorama: Trunk, Blossoms and tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, grass, flowers, lily pads)",
     "slots": "public/trees/sakura.json",
-    "generator": "tools/tree-build/sakura.py",
+    "generator": "tools/tree-build/sakura.py (shared builders in tools/tree-build/diorama.py)",
     "licence": "CC0-1.0",
     "author": "seasonal-qr contributors",
     "generated": true,
@@ -15,6 +15,26 @@
       "3": "blossom pale: inside a blossom shell, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
       "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
       "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to blossoms)",
+      "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
+    }
+  },
+  {
+    "path": "public/models/autumn.glb",
+    "description": "Autumn diorama: a leaning Japanese maple in full red (Trunk; Blossoms = flat tiered foliage pads in crimson, red, orange and amber) on the tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, dry grass, a few asters, lily pads, fallen leaves)",
+    "slots": "public/trees/autumn.json",
+    "generator": "tools/tree-build/autumn.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"autumn\",\"slots\":[[x,y,z,p],...]}: GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "canopy deep: inside a foliage pad, >= 0.6 deep, lower/inner canopy",
+      "2": "canopy mid: inside a foliage pad, >= 0.6 deep",
+      "3": "canopy pale: inside a foliage pad, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to the canopy)",
       "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
       "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
     }

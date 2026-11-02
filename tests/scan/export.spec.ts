@@ -6,7 +6,7 @@ const PAYLOADS = ['https://example.com', 'こんにちは世界、桜の季節�
 
 for (const text of PAYLOADS) {
   test(`exported files scan: ${text}`, async ({ page }) => {
-    await page.goto('/?text=' + encodeURIComponent(text))
+    await page.goto('/?season=sakura&text=' + encodeURIComponent(text))
     await page.waitForSelector('a[download="seasonal-qr.svg"]', { state: 'attached' })
     const href = (name: string) => page.locator(`a[download="${name}"]`).getAttribute('href')
     const expected = { jsqr: text, zxing: text }

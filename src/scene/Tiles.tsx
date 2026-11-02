@@ -2,12 +2,9 @@ import { useEffect, useMemo } from 'react'
 import { BoxGeometry, Color, InstancedBufferAttribute, ShaderMaterial } from 'three'
 import { FLIGHT, type TilePair } from '../mapping'
 
-import { sakura } from '../seasons/sakura'
+import type { Season } from '../seasons'
 
 const colors = (hex: string[]) => hex.map((c) => new Color(c))
-export const PALETTE = colors(sakura.tree)
-const FINAL_DARK = colors(sakura.finalDark)
-const FINAL_LIGHT = new Color(sakura.finalLight)
 
 const vertexShader = /* glsl */ `
   attribute vec3 aStart;
@@ -41,22 +38,26 @@ const fragmentShader = /* glsl */ `
 `
 
 interface Props {
+  season: Season
   pairs: TilePair[]
   gridSize: number
   /** shared uniform object, tweened by the GSAP timeline */
   progress: { value: number }
 }
 
-export function Tiles({ pairs, gridSize, progress }: Props) {
+export function Tiles({ season, pairs, gridSize, progress }: Props) {
   const material = useMemo(
-    () => new ShaderMaterial({ uniforms: { uProgress: progress, uScale: { value: sakura.baseSize / gridSize } }, defines: { FLIGHT }, vertexShader, fragmentShader }),
-    [progress, gridSize],
+    () => new ShaderMaterial({ uniforms: { uProgress: progress, uScale: { value: season.baseSize / gridSize } }, defines: { FLIGHT }, vertexShader, fragmentShader }),
+    [progress, gridSize, season],
   )
 
   const geometry = useMemo(() => {
     const n = pairs.length
     const c = (gridSize - 1) / 2
-    const s = sakura.baseSize / gridSize
+    const s = season.baseSize / gridSize
+    const palette = colors(season.tree)
+    const finalDark = colors(season.finalDark)
+    const finalLight = new Color(season.finalLight)
     const start = new Float32Array(n * 3)
     const end = new Float32Array(n * 3)
     const delay = new Float32Array(n)
@@ -67,8 +68,8 @@ export function Tiles({ pairs, gridSize, progress }: Props) {
       // Grid centred on the origin spanning baseSize, bottoms flush on the base top (y = -0.5); dark modules raised s/2.
       end.set([(cell.col - c) * s, s / 2 - 0.5 + (cell.dark ? s / 2 : 0), (cell.row - c) * s], i * 3)
       delay[i] = d
-      PALETTE[slot.paletteIndex].toArray(startColor, i * 3)
-      ;(cell.dark ? FINAL_DARK[slot.paletteIndex] : FINAL_LIGHT).toArray(endColor, i * 3)
+      palette[slot.paletteIndex].toArray(startColor, i * 3)
+      ;(cell.dark ? finalDark[slot.paletteIndex] : finalLight).toArray(endColor, i * 3)
     })
     const g = new BoxGeometry(1, 1, 1) // exact 1×1 footprint: zero gaps between neighbours (plan §5.5)
     g.setAttribute('aStart', new InstancedBufferAttribute(start, 3))
@@ -77,7 +78,7 @@ export function Tiles({ pairs, gridSize, progress }: Props) {
     g.setAttribute('aStartColor', new InstancedBufferAttribute(startColor, 3))
     g.setAttribute('aEndColor', new InstancedBufferAttribute(endColor, 3))
     return g
-  }, [pairs, gridSize])
+  }, [pairs, gridSize, season])
 
   useEffect(() => () => geometry.dispose(), [geometry])
   useEffect(() => () => material.dispose(), [material])
