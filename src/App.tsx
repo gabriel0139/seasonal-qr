@@ -7,7 +7,7 @@ import { QrScene } from './scene/QrScene'
 import { Controls } from './ui/Controls'
 
 // URL contract: docs-contract.md
-const DEFAULT_TEXT = 'https://github.com/gabrieljohnliew/seasonal-qr'
+const DEFAULT_TEXT = 'https://google.com'
 const params = new URLSearchParams(location.search)
 const INITIAL_TEXT = params.get('text') ?? DEFAULT_TEXT
 const END = params.get('t') === 'end'
