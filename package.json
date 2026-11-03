@@ -13,7 +13,8 @@
     "test:scan": "playwright test",
     "reveal:strip": "node tools/reveal-strip.mjs",
     "tree:build": "for s in sakura autumn summer winter; do /Applications/Blender.app/Contents/MacOS/Blender -b -P tools/tree-build/$s.py || exit 1; done",
-    "tree:open": "tools/tree-build/open.sh"
+    "tree:open": "tools/tree-build/open.sh",
+    "tree:import": "node tools/tree-import.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
@@ -38,6 +39,7 @@
     "jsqr": "^1.4.0",
     "pngjs": "^7.0.0",
     "sharp": "^0.35.5",
+    "three-mesh-bvh": "^0.8.3",
     "typescript": "^7.0.2",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"

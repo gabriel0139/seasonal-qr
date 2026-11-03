@@ -38,5 +38,45 @@
       "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
       "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
     }
+  },
+  {
+    "path": "public/models/summer.glb",
+    "description": "Summer diorama: a broad camphor/zelkova-style shade tree under a four-shade green crown (Trunk; Blossoms = layered foliage puffs), on the tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, grass, hydrangea-blue flowers, lily pads)",
+    "slots": "public/trees/summer.json",
+    "generator": "tools/tree-build/summer.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"summer\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Lantern; wood: Bridge, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "canopy deep: inside a foliage pad, >= 0.6 deep, lower/inner canopy",
+      "2": "canopy mid: inside a foliage pad, >= 0.6 deep",
+      "3": "canopy pale: inside a foliage pad, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to the canopy)",
+      "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
+    }
+  },
+  {
+    "path": "public/models/winter.glb",
+    "description": "Winter diorama: a bare, gnarled zelkova whose branch ends carry mounded snow clumps as the canopy (Trunk; Blossoms = snow clumps), on a snow lawn, with an icy pond, a vermilion bridge, a snow-hatted lantern and a Snow prop",
+    "slots": "public/trees/winter.json",
+    "generator": "tools/tree-build/winter.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"winter\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Lantern; wood: Bridge, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "canopy deep: inside a foliage pad, >= 0.6 deep, lower/inner canopy",
+      "2": "canopy mid: inside a foliage pad, >= 0.6 deep",
+      "3": "canopy pale: inside a foliage pad, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to the canopy)",
+      "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
+    }
   }
 ]

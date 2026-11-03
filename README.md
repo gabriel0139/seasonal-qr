@@ -19,9 +19,21 @@ The scan test renders each payload in headless Chromium, then checks that both j
 
 QR Code is a registered trademark of DENSO WAVE INCORPORATED.
 
+### Contributing
+
+See `CONTRIBUTING.md` for the contribution ladder (QR colour overrides, then trees, then code), licence rules and the PR checklist. CI checks every asset against `assets-manifest.json`, decodes every season, and attaches tree and QR screenshots of each season to the Playwright report so reviewers can see a new tree without cloning.
+
 ### Adding a season
 
-Add an entry (`id`, `name`) to `src/seasons/index.ts` and drop in `public/models/<id>.glb` and `public/trees/<id>.json`. The GLB needs the nodes `Trunk`, `Blossoms`, `Base`, `Props`, `Water`. CI decodes every season whose GLB exists, with every payload, so no test changes are needed.
+Add an entry (`id`, `name`) to `src/seasons/index.ts` and drop in `public/models/<id>.glb` and `public/trees/<id>.json`. CI decodes every season whose GLB exists, with every payload, so no test changes are needed.
+
+No Blender needed: `npm run tree:import -- <id> path/to/model.glb` copies any GLB to `public/models/<id>.glb` and samples `public/trees/<id>.json` from it with the same rules as the Blender build. The GLB must be Y up and have:
+
+- root nodes `Trunk`, `Blossoms` and `Base`, each closed (watertight and consistently wound; up to 0.1% open edges are tolerated for decimation slits). `Blossoms` may be several overlapping closed shells.
+- `Base` with its top at y = 0 and within ±36 in x and z. Its most up-facing material is the lawn colour. Faces with a material named `PondBed` mark a pond basin, which lawn slots keep 1.0 clear of.
+- optionally a root `Props`, whose children are scenery that the lawn slots keep clear of. Children with these names also hold slots: `Bridge` (wood) and `Lantern` or `Rocks` (stone), which must be closed, and `Water`, an open disc at the pond surface with pond-water slots under it. A class whose prop is missing or too thin gives its share to the canopy.
+
+The tool stops with a message that names the node and the broken rule. Before writing anything it checks its own output: every slot re-passes its class test, the class counts and shares hold, and every prefix the QR grids use keeps the class mix. Palette: trunk is the material covering most of `Trunk`; canopy deep, mid and pale are the darkest, second-darkest and lightest `Blossoms` materials; wood, stone and water are the first material of `Bridge`, `Lantern` (or `Rocks`) and `Water`. Without them it uses the trunk colour, `#3d4049` and `#173f66`.
 
 The JSON carries everything else about the season, `{"name", "baseSize", "palette", "slots"}`:
 
@@ -40,7 +52,7 @@ The built-in seasons come from `tools/tree-build/<id>.py` (`npm run tree:build` 
 
 ### URL parameters
 
-- `?text=<url-encoded payload>` — content to encode (capped at QR version 10, EC level M). A density meter under the input shows the size class, byte count and QR version; the "Download PNG" and "Download SVG" links save the current code.
+- `?text=<url-encoded payload>` — content to encode (capped at QR version 10, EC level M). A QR code holds a few hundred bytes, so to share a document or folder, host it elsewhere (Google Drive, Dropbox, a GitHub release) and encode its share link; nothing is ever uploaded through this site. A density meter under the input shows the size class, byte count and QR version; the "Download PNG" and "Download SVG" links save the current code.
 - `&season=<id>` — which tree to grow (`sakura`, `summer`, `autumn`, `winter`). Without it, or with an unknown id, the site picks the season from today's date (northern hemisphere: sakura from 20 March, summer from 21 June, autumn from 22 September, winter from 21 December). The Season picker switches it live.
 - `&t=end` — jump straight to the scan-ready final frame; used by the Playwright scan tests, which wait for `body[data-ready="true"]`.
 - `&seed=<int>` — deterministic seed for the tree layout and unfold jitter.

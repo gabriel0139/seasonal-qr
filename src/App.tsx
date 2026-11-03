@@ -5,7 +5,8 @@ import { encodeQr, gridSize, type QrResult } from './qr'
 import { QrScene } from './scene/QrScene'
 import { seasonFor, seasons, type Season, type SeasonEntry } from './seasons'
 import { deriveSeason } from './seasons/derive'
-import { Controls } from './ui/Controls'
+import manifest from '../assets-manifest.json'
+import { Controls, qrPng, qrSvg } from './ui/Controls'
 
 // URL contract: docs-contract.md
 const DEFAULT_TEXT = 'https://google.com'
@@ -14,6 +15,12 @@ const fragment = new URLSearchParams(location.hash.slice(1)) // share links: fra
 const param = (key: string) => fragment.get(key) ?? params.get(key)
 const INITIAL_TEXT = param('text') ?? DEFAULT_TEXT
 const INITIAL_SEASON = seasons[param('season') ?? ''] ?? seasons[seasonFor()]
+const REPO = 'https://github.com/gabriel0139/seasonal-qr'
+const HAS_WEBGL = (() => {
+  const c = document.createElement('canvas')
+  return !!(c.getContext('webgl2') ?? c.getContext('webgl'))
+})()
+const CREDITS = manifest.filter((m) => m.slots).map((m) => ({ ...m, name: m.path.replace(/^.*\//, '').replace(/\.\w+$/, '') }))
 const END = param('t') === 'end'
 const parsedSeed = Number.parseInt(param('seed') ?? '', 10)
 const SEED = Number.isFinite(parsedSeed) ? parsedSeed : 1
@@ -97,9 +104,46 @@ export default function App() {
 
   if (!active) return seasonError ? <p role="alert" className="error">{seasonError}</p> : null
   return (
-    <main>
-      <QrScene season={active.season} pairs={pairs} gridSize={size} modulePx={modulePx} progress={progress} rig={rig} />
-      {!END && <Controls season={active.season} seasonError={seasonError} onSeason={onSeason} tl={tl} text={text} error={error} qr={qr} onText={onText} pairs={pairs} seed={SEED} />}
-    </main>
+    <>
+      {!END && (
+        <header>
+          <h1>Seasonal QR</h1>
+          <p>
+            A seasonal tree that unfolds into a real, scannable QR code. Runs in your browser, nothing is uploaded.{' '}
+            <a href={REPO}>GitHub</a>
+          </p>
+        </header>
+      )}
+      <main>
+        {HAS_WEBGL ? (
+          <QrScene season={active.season} pairs={pairs} gridSize={size} modulePx={modulePx} progress={progress} rig={rig} />
+        ) : (
+          <div className="controls">
+            <p>The 3D reveal needs WebGL, which is unavailable here. Here is the flat QR code.</p>
+            <img src={qrPng(active.season, qr, pairs)} alt="QR code" style={{ width: '100%', maxWidth: 320, imageRendering: 'pixelated' }} />
+            <label>
+              Text
+              <input value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} />
+            </label>
+            <p role="alert" className="error">{error}</p>
+            <div className="row">
+              <a href={`data:image/svg+xml,${encodeURIComponent(qrSvg(active.season, qr, pairs))}`} download="seasonal-qr.svg">Download SVG</a>
+              <a href={qrPng(active.season, qr, pairs)} download="seasonal-qr.png">Download PNG</a>
+            </div>
+          </div>
+        )}
+        {HAS_WEBGL && !END && <Controls season={active.season} seasonError={seasonError} onSeason={onSeason} tl={tl} text={text} error={error} qr={qr} onText={onText} pairs={pairs} seed={SEED} />}
+      </main>
+      {!END && (
+        <footer>
+          <p>
+            Tree models:{' '}
+            {CREDITS.map((c) => `${c.name[0].toUpperCase()}${c.name.slice(1)} · ${c.author} · ${c.licence}`).join('; ')}.
+          </p>
+          <p>Code: MIT licence.</p>
+          <p>QR Code is a registered trademark of DENSO WAVE INCORPORATED.</p>
+        </footer>
+      )}
+    </>
   )
 }

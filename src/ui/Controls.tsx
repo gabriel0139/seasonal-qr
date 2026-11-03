@@ -29,7 +29,7 @@ function darkByColour(season: Season, pairs: TilePair[]): Map<string, number[][]
 }
 
 /** Flat SVG of the same mosaic the tiles show (plan §5.9 fallback). */
-function qrSvg(season: Season, { size }: QrResult, pairs: TilePair[]): string {
+export function qrSvg(season: Season, { size }: QrResult, pairs: TilePair[]): string {
   const g = size + 2 * QUIET_ZONE
   const paths = [...darkByColour(season, pairs)]
     .map(([colour, cs]) => `<path d="${cs.map(([c, r]) => `M${c} ${r}h1v1h-1z`).join('')}" fill="${colour}"/>`)
@@ -38,7 +38,7 @@ function qrSvg(season: Season, { size }: QrResult, pairs: TilePair[]): string {
 }
 
 /** Flat PNG at 10 px per module, same mosaic as qrSvg. */
-function qrPng(season: Season, { size }: QrResult, pairs: TilePair[]): string {
+export function qrPng(season: Season, { size }: QrResult, pairs: TilePair[]): string {
   const px = 10
   const canvas = document.createElement('canvas')
   canvas.width = canvas.height = (size + 2 * QUIET_ZONE) * px
@@ -105,6 +105,7 @@ export function Controls({ season, seasonError, onSeason, tl, text, error, qr, p
       <p id="text-error" role="alert" className="error">
         {error}
       </p>
+      <p className="density">To share a document or folder, host it (Google Drive, Dropbox, a GitHub release) and paste its share link. Files cannot fit in a QR code.</p>
       <label>
         Season
         <select value={season.id} onChange={(e) => onSeason(e.target.value)}>
