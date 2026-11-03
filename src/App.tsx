@@ -1,5 +1,5 @@
 import { gsap } from 'gsap'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { cloudSlots, qrCells, radialUnfold } from './mapping'
 import { encodeQr, gridSize, type QrResult } from './qr'
 import { QrScene } from './scene/QrScene'
@@ -102,48 +102,55 @@ export default function App() {
     setError(null)
   }
 
-  if (!active) return seasonError ? <p role="alert" className="error">{seasonError}</p> : null
-  return (
-    <>
+  const chrome = (children: ReactNode) => (
+    // The season's deep canopy colour tints the controls; the scan-ready frame (END) is the bare canvas for the scan tests.
+    <div style={{ '--accent': active?.season.finalDark[2], '--accent-soft': active?.season.tree[2] } as CSSProperties}>
       {!END && (
         <header>
-          <h1>Seasonal QR</h1>
-          <p>
-            A seasonal tree that unfolds into a real, scannable QR code. Runs in your browser, nothing is uploaded.{' '}
-            <a href={REPO}>GitHub</a>
-          </p>
+          <h1>
+            Seasonal QR
+            <small>A seasonal tree that unfolds into a real, scannable QR code. Runs in your browser, nothing is uploaded.</small>
+          </h1>
+          <a href={REPO}>GitHub ↗</a>
         </header>
       )}
-      <main>
-        {HAS_WEBGL ? (
-          <QrScene season={active.season} pairs={pairs} gridSize={size} modulePx={modulePx} progress={progress} rig={rig} />
-        ) : (
-          <div className="controls">
-            <p>The 3D reveal needs WebGL, which is unavailable here. Here is the flat QR code.</p>
-            <img src={qrPng(active.season, qr, pairs)} alt="QR code" style={{ width: '100%', maxWidth: 320, imageRendering: 'pixelated' }} />
-            <label>
-              Text
-              <input value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} />
-            </label>
-            <p role="alert" className="error">{error}</p>
-            <div className="row">
-              <a href={`data:image/svg+xml,${encodeURIComponent(qrSvg(active.season, qr, pairs))}`} download="seasonal-qr.svg">Download SVG</a>
-              <a href={qrPng(active.season, qr, pairs)} download="seasonal-qr.png">Download PNG</a>
-            </div>
-          </div>
-        )}
-        {HAS_WEBGL && !END && <Controls season={active.season} seasonError={seasonError} onSeason={onSeason} tl={tl} text={text} error={error} qr={qr} onText={onText} pairs={pairs} seed={SEED} />}
-      </main>
+      <main>{children}</main>
       {!END && (
         <footer>
           <p>
             Tree models:{' '}
             {CREDITS.map((c) => `${c.name[0].toUpperCase()}${c.name.slice(1)} · ${c.author} · ${c.licence}`).join('; ')}.
           </p>
-          <p>Code: MIT licence.</p>
-          <p>QR Code is a registered trademark of DENSO WAVE INCORPORATED.</p>
+          <p>Code: MIT licence. QR Code is a registered trademark of DENSO WAVE INCORPORATED.</p>
         </footer>
       )}
-    </>
+    </div>
+  )
+
+  if (!active) return chrome(seasonError ? <p role="alert" className="error">{seasonError}</p> : <p className="loading">Growing the tree…</p>)
+  if (!HAS_WEBGL) {
+    return chrome(
+      <div className="fallback">
+        <p className="hint">The 3D reveal needs WebGL, which is unavailable here. Here is the flat QR code.</p>
+        <img src={qrPng(active.season, qr, pairs)} alt="QR code" />
+        <label>
+          Text
+          <input value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} />
+        </label>
+        <p role="alert" className="error">{error}</p>
+        <div className="actions">
+          <a href={`data:image/svg+xml,${encodeURIComponent(qrSvg(active.season, qr, pairs))}`} download="seasonal-qr.svg">Download SVG</a>
+          <a href={qrPng(active.season, qr, pairs)} download="seasonal-qr.png">Download PNG</a>
+        </div>
+      </div>,
+    )
+  }
+  return chrome(
+    <>
+      <div className="stage">
+        <QrScene season={active.season} pairs={pairs} gridSize={size} modulePx={modulePx} progress={progress} rig={rig} />
+      </div>
+      {!END && <Controls season={active.season} seasonError={seasonError} onSeason={onSeason} tl={tl} text={text} error={error} qr={qr} onText={onText} pairs={pairs} seed={SEED} />}
+    </>,
   )
 }

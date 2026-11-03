@@ -99,68 +99,67 @@ export function Controls({ season, seasonError, onSeason, tl, text, error, qr, p
   return (
     <div className="controls" inert={exporting !== null}>
       <label>
-        Text
-        <input value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} aria-describedby="text-error" />
+        Link or text
+        <input value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} aria-describedby="text-error" placeholder="https://" />
       </label>
       <p id="text-error" role="alert" className="error">
         {error}
       </p>
-      <p className="density">To share a document or folder, host it (Google Drive, Dropbox, a GitHub release) and paste its share link. Files cannot fit in a QR code.</p>
-      <label>
-        Season
-        <select value={season.id} onChange={(e) => onSeason(e.target.value)}>
-          {Object.values(seasons).map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
+      <div className="field">
+        <span>Size</span>
+        <div className="meter" aria-hidden="true">
+          {LABELS.map((l) => (
+            <span key={l} className={l === info.label ? 'active' : undefined} />
           ))}
-        </select>
-      </label>
-      {seasonError && (
-        <p role="alert" className="error">
-          {seasonError}
-        </p>
-      )}
-      <p className="density">{summary}</p>
-      <div className="meter" aria-hidden="true">
-        {LABELS.map((l) => (
-          <span key={l} className={l === info.label ? 'active' : undefined} />
-        ))}
+        </div>
+        <p className="density">{summary}</p>
+        <p className="hint">A QR code holds a few hundred bytes. To share a document or folder, host it (Google Drive, Dropbox, a GitHub release) and paste its share link.</p>
       </div>
-      <div className="row">
-        <button
-          onClick={() => {
-            if (revealing) tl.reverse()
-            else tl.play()
-            setRevealing(!revealing)
-          }}
-        >
-          {revealing ? 'Grow back' : 'Reveal'}
-        </button>
-        <label>
-          Progress
-          <input
-            type="range"
-            min={0}
-            max={1}
-            step={0.001}
-            value={progress}
-            onChange={(e) => tl.pause().progress(Number(e.target.value))}
-          />
-        </label>
-        <a href={svgHref} download="seasonal-qr.svg">
-          Download SVG
-        </a>
+      <div className="field">
+        <span>Season</span>
+        <div className="seasons" role="group" aria-label="Season">
+          {Object.values(seasons).map((s) => (
+            <button key={s.id} type="button" aria-pressed={s.id === season.id} onClick={() => onSeason(s.id)}>
+              {s.name}
+            </button>
+          ))}
+        </div>
+        {seasonError && (
+          <p role="alert" className="error">
+            {seasonError}
+          </p>
+        )}
+      </div>
+      <button
+        className="primary"
+        onClick={() => {
+          if (revealing) tl.reverse()
+          else tl.play()
+          setRevealing(!revealing)
+        }}
+      >
+        {revealing ? 'Grow back' : 'Reveal the code'}
+      </button>
+      <label>
+        Progress
+        <input type="range" min={0} max={1} step={0.001} value={progress} onChange={(e) => tl.pause().progress(Number(e.target.value))} />
+      </label>
+      <div className="actions">
         <a href={pngHref} download="seasonal-qr.png">
           Download PNG
         </a>
-        <label>
-          <input type="checkbox" checked={includeText} onChange={(e) => setIncludeText(e.target.checked)} />
-          Include text in link
-        </label>
+        <a href={svgHref} download="seasonal-qr.svg">
+          Download SVG
+        </a>
         <button onClick={copyLink}>{copied ? 'Copied' : 'Copy link'}</button>
-        <button onClick={onExportVideo}>{exporting === null ? videoLabel : `Exporting ${Math.round(exporting * 100)}%`}</button>
+        <button onClick={onExportVideo} disabled={exporting !== null}>
+          {exporting === null ? videoLabel : `Exporting ${Math.round(exporting * 100)}%`}
+        </button>
       </div>
+      <label className="check">
+        <input type="checkbox" checked={includeText} onChange={(e) => setIncludeText(e.target.checked)} />
+        Include the text in the copied link
+      </label>
     </div>
   )
 }
