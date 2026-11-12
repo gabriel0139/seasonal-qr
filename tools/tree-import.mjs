@@ -151,7 +151,10 @@ export async function sampleTree(glb, name) {
   // Water is an open disc: parity through it means nothing, so it is no obstacle
   const solid = Object.entries(props).filter(([k]) => k !== 'Water').map(([, p]) => bvhOf(p.tris))
   const wood = [props.Bridge].filter(Boolean), stone = [props.Lantern, props.Rocks].filter(Boolean), water = props.Water
-  const woodB = wood.map((p) => bvhOf(p.tris)), stoneB = stone.map((p) => bvhOf(p.tris)), waterB = water && bvhOf(water.tris)
+  // per connected piece, like the canopy: where two rocks overlap, the nearest face of the whole mesh can be the
+  // neighbour's buried surface, and a slot's depth sign then flips when it is rounded
+  const byPiece = (ps) => ps.flatMap((p) => pieces(p.tris).map(bvhOf))
+  const woodB = byPiece(wood), stoneB = byPiece(stone), waterB = water && bvhOf(water.tris)
 
   const rules = (e) => { // class -> slot test; e loosens the margins to re-test the rounded slots
     const r = {

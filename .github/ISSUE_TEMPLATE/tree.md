@@ -1,6 +1,6 @@
 ---
 name: Tree
-about: Propose or share a new season tree
+about: Propose or share a new season scene (a tree or any seasonal centrepiece)
 labels: tree
 ---
 

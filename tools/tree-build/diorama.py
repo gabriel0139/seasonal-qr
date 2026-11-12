@@ -189,6 +189,8 @@ def pond_pt(a, scale=1.0, z=0.0):
 
 
 def pond_gap(p):  # horizontal distance outside the pond outline (negative inside)
+    if not HAS_POND:
+        return math.inf
     d = flat(p - POND)
     return d.length - pond_r(math.atan2(d.y, d.x))
 
@@ -255,24 +257,29 @@ BSIDE = Z.cross(BDIR)
 B0 = POND - BDIR * (L_BR / 2)
 LANTERN = Vector((10.5, -19.0, 0.0))  # just off the bridge's front-right foot
 FOOT = None  # centre of the root flare, set by finish()
+HAS_POND = HAS_BRIDGE = HAS_LANTERN = True  # the garden set pieces; finish() switches them per scene
+KEEP_CLEAR = None  # a scene's own test (p, pad) -> True where its props stand, set by finish()
 
 
 def bridge_dist(p):  # horizontal distance from the bridge's centre line
+    if not HAS_BRIDGE:
+        return math.inf
     d = flat(p - B0)
     return (d - flat(BDIR) * max(0.0, min(L_BR, d.dot(flat(BDIR))))).length
 
 
 def open_ground(p, pad):  # off the pond, bridge, lantern and trunk, inside the base
     return (max(abs(p.x), abs(p.y)) < 34 - pad and pond_gap(p) > 1.5 + pad and bridge_dist(p) > 2.8 + pad
-            and (flat(p - LANTERN)).length > 2.5 + pad and flat(p - FOOT).length > 8.5 + pad)
+            and (not HAS_LANTERN or flat(p - LANTERN).length > 2.5 + pad) and flat(p - FOOT).length > 8.5 + pad
+            and not (KEEP_CLEAR and KEEP_CLEAR(p, pad)))
 
 
 def ground_pt(near_pond):  # a candidate spot, biased to the pond rim, the tree's feet or anywhere
     roll = rng.random()
-    if roll < near_pond:
+    if roll < near_pond and HAS_POND:
         a = rng.uniform(0, 2 * math.pi)
         return pond_pt(a) + horiz(a) * rng.uniform(1.8, 4.5)
-    if roll < near_pond + 0.2:
+    if near_pond <= roll < near_pond + 0.2:
         return FOOT + horiz(rng.uniform(0, 2 * math.pi)) * rng.uniform(8.6, 14)
     return Vector((rng.uniform(-33, 33), rng.uniform(-33, 33), 0))
 
@@ -346,11 +353,14 @@ def sample(obs, count, ok, zlo=None, zhi=None, tries=None):  # uniform rejection
 
 
 def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles=22, mounds=16, tufts=60, clumps=10,
-           lotus=2, extras=None):
+           lotus=2, extras=None, pond=True, bridge=True, lantern=True, keep_clear=None):
     """Base, props, slot cloud, self-checks and export. tips / root (centre of the root flare) are tree-local;
     colours maps every scenery material name to hex sRGB; rocks are extra (centre, radius) boulders; extras() adds
-    season props (closed meshes only: open ones fool the lawn's parity test) after the flowers."""
-    global FOOT
+    season props (closed meshes only: open ones fool the lawn's parity test) after the flowers. pond, bridge and
+    lantern switch the garden set pieces off for a scene with its own setting; their slot shares go to the canopy.
+    keep_clear(p, pad) -> True keeps the scattered pebbles, mounds, grass and flowers off the scene's own props."""
+    global FOOT, HAS_POND, HAS_BRIDGE, HAS_LANTERN, KEEP_CLEAR
+    HAS_POND, HAS_BRIDGE, HAS_LANTERN, KEEP_CLEAR = pond, bridge, lantern, keep_clear
     glb_path = os.path.join(ROOT, 'public', 'models', name + '.glb')
     slots_path = os.path.join(ROOT, 'public', 'trees', name + '.json')
     tag = name.upper()
@@ -366,26 +376,27 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     bm.to_mesh(me)
     bm.free()
     base = link('Base', me)
-    bm = bmesh.new()  # bowl-shaped cutter: rings of the outline, shrinking with depth
-    K = 96
-    rings = [[bm.verts.new(pond_pt(2 * math.pi * k / K, 0.98 * s, z)) for k in range(K)]
-             for s, z in ((1.0, 1.0), (1.0, -0.3), (0.85, -0.9), (0.6, -1.35), (0.3, -1.6))]
-    bm.faces.new(rings[0])
-    for r0, r1 in zip(rings, rings[1:]):
+    if pond:
+        bm = bmesh.new()  # bowl-shaped cutter: rings of the outline, shrinking with depth
+        K = 96
+        rings = [[bm.verts.new(pond_pt(2 * math.pi * k / K, 0.98 * s, z)) for k in range(K)]
+                 for s, z in ((1.0, 1.0), (1.0, -0.3), (0.85, -0.9), (0.6, -1.35), (0.3, -1.6))]
+        bm.faces.new(rings[0])
+        for r0, r1 in zip(rings, rings[1:]):
+            for k in range(K):
+                bm.faces.new((r0[k], r1[k], r1[(k + 1) % K], r0[(k + 1) % K]))
+        bottom = bm.verts.new(POND + Z * -1.7)
         for k in range(K):
-            bm.faces.new((r0[k], r1[k], r1[(k + 1) % K], r0[(k + 1) % K]))
-    bottom = bm.verts.new(POND + Z * -1.7)
-    for k in range(K):
-        bm.faces.new((rings[-1][k], bottom, rings[-1][(k + 1) % K]))
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
-    me = bpy.data.meshes.new('PondCut')
-    bm.to_mesh(me)
-    bm.free()
-    cutter = link('PondCut', me)
-    mod = base.modifiers.new('pond', 'BOOLEAN')
-    mod.operation, mod.solver, mod.object = 'DIFFERENCE', 'EXACT', cutter
-    apply_modifiers(base)
-    bpy.data.objects.remove(cutter)
+            bm.faces.new((rings[-1][k], bottom, rings[-1][(k + 1) % K]))
+        bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+        me = bpy.data.meshes.new('PondCut')
+        bm.to_mesh(me)
+        bm.free()
+        cutter = link('PondCut', me)
+        mod = base.modifiers.new('pond', 'BOOLEAN')
+        mod.operation, mod.solver, mod.object = 'DIFFERENCE', 'EXACT', cutter
+        apply_modifiers(base)
+        bpy.data.objects.remove(cutter)
     bm = bmesh.new()
     bm.from_mesh(base.data)
     slab(bm, 34.0, -7.0, -3.1, 0.4)
@@ -414,108 +425,120 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     bpy.context.scene.collection.objects.link(props)
     FOOT = TREE + Vector((root.x, root.y, 0))
 
-    # pond: earthen rim bank and rim stones; the hole's edge hides under the water and the bank
-    bm = bmesh.new()
-    tube(bm, 0, [pond_pt(2 * math.pi * k / 96, 1.02, -0.25) for k in range(96)], 0.7, sides=8, closed=True)
-    for k in range(30):
-        a = 2 * math.pi * (k + rng.uniform(-0.3, 0.3)) / 30
-        p = pond_pt(a, 1.0, 0.1) + horiz(a) * 0.5
-        if bridge_dist(p) > 3.0:
-            blob(bm, 1 + rng.randrange(2), p, rng.uniform(0.5, 0.95), (1.3, 1.0, 0.6), rough=0.25,
-                 yaw=rng.uniform(0, 6.3))
-    prop('Pond', bm, mat('PondBank'), mat('RimStone'), mat('RimStoneLight'))
+    water = None
+    if pond:
+        # pond: earthen rim bank and rim stones; the hole's edge hides under the water and the bank
+        bm = bmesh.new()
+        tube(bm, 0, [pond_pt(2 * math.pi * k / 96, 1.02, -0.25) for k in range(96)], 0.7, sides=8, closed=True)
+        for k in range(30):
+            a = 2 * math.pi * (k + rng.uniform(-0.3, 0.3)) / 30
+            p = pond_pt(a, 1.0, 0.1) + horiz(a) * 0.5
+            if bridge_dist(p) > 3.0:
+                blob(bm, 1 + rng.randrange(2), p, rng.uniform(0.5, 0.95), (1.3, 1.0, 0.6), rough=0.25,
+                     yaw=rng.uniform(0, 6.3))
+        prop('Pond', bm, mat('PondBank'), mat('RimStone'), mat('RimStoneLight'))
 
-    bm = bmesh.new()
-    fan(bm, 0, POND + Z * 0.04, [pond_pt(2 * math.pi * k / 96, 1.04, 0.04) for k in range(97)])
-    water_mat = mat('Water', rough=0.1)
-    water_mat.node_tree.nodes['Principled BSDF'].inputs['Alpha'].default_value = 0.7
-    water_mat.surface_render_method = 'BLENDED'
-    water = prop('Water', bm, water_mat)
+        bm = bmesh.new()
+        fan(bm, 0, POND + Z * 0.04, [pond_pt(2 * math.pi * k / 96, 1.04, 0.04) for k in range(97)])
+        water_mat = mat('Water', rough=0.1)
+        water_mat.node_tree.nodes['Principled BSDF'].inputs['Alpha'].default_value = 0.7
+        water_mat.surface_render_method = 'BLENDED'
+        water = prop('Water', bm, water_mat)
 
     # lily pads with a notch, the first `lotus` carrying a lotus; above the water's bob (+-0.05)
     centre_mat = mat('FlowerCentre')
-    bm, pads = bmesh.new(), []
-    while len(pads) < 4:
-        p = POND + Vector((rng.uniform(-8, 8), rng.uniform(-6, 6), 0))
-        if pond_gap(p) < -1.8 and bridge_dist(p) > 3.6 and all((p - q).length > 3 for q in pads):
-            pads.append(p)
-    for i, p in enumerate(pads):
-        r, notch, a0 = rng.uniform(1.0, 1.5), math.radians(rng.uniform(25, 45)), rng.uniform(0, 2 * math.pi)
-        fan(bm, 0, p + Z * 0.18, [p + horiz(a0 + notch / 2 + (2 * math.pi - notch) * k / 16) * r + Z * 0.14
-                                  for k in range(17)])
-        if i < lotus:  # lotus: two rings of petals round a yellow seed head
-            c = p + Z * 0.15 + horiz(a0 + math.pi) * r * 0.2
-            for n, tilt, ln, off in ((8, 62, 0.95, 0.15), (6, 28, 0.85, 0.08)):
-                for k in range(n):
-                    th = 2 * math.pi * (k + 0.5 * (n == 6)) / n
-                    d = horiz(th) * math.sin(math.radians(tilt)) + Z * math.cos(math.radians(tilt))
-                    w = horiz(th + math.pi / 2)
-                    prim(bm, 'icosphere', 1, frame(c + horiz(th) * off + d * ln * 0.5, w * 0.3, d.cross(w) * 0.12,
-                                                   d * ln * 0.5), subdivisions=2, radius=1.0)
-            blob(bm, 2, c + Z * 0.25, 1.0, (0.22, 0.22, 0.14), sub=1)
-    prop('LilyPads', bm, *((mat('LilyPad'), mat('Lotus'), centre_mat) if lotus else (mat('LilyPad'),)))
+    if pond:
+        bm, pads = bmesh.new(), []
+        while len(pads) < 4:
+            p = POND + Vector((rng.uniform(-8, 8), rng.uniform(-6, 6), 0))
+            if pond_gap(p) < -1.8 and bridge_dist(p) > 3.6 and all((p - q).length > 3 for q in pads):
+                pads.append(p)
+        for i, p in enumerate(pads):
+            r, notch, a0 = rng.uniform(1.0, 1.5), math.radians(rng.uniform(25, 45)), rng.uniform(0, 2 * math.pi)
+            # a closed lens, not an open disc: slanted parity rays from the lawn beside the pond cross the pads
+            top, low = bm.verts.new(p + Z * 0.18), bm.verts.new(p + Z * 0.1)
+            ring = [bm.verts.new(p + horiz(a0 + notch / 2 + (2 * math.pi - notch) * k / 16) * r + Z * 0.14)
+                    for k in range(17)]
+            for v0, v1 in zip(ring, ring[1:]):
+                bm.faces.new((top, v0, v1)).material_index = 0
+                bm.faces.new((low, v1, v0)).material_index = 0
+            bm.faces.new((ring[0], top, low)).material_index = 0  # the notch's two walls
+            bm.faces.new((top, ring[-1], low)).material_index = 0
+            if i < lotus:  # lotus: two rings of petals round a yellow seed head
+                c = p + Z * 0.15 + horiz(a0 + math.pi) * r * 0.2
+                for n, tilt, ln, off in ((8, 62, 0.95, 0.15), (6, 28, 0.85, 0.08)):
+                    for k in range(n):
+                        th = 2 * math.pi * (k + 0.5 * (n == 6)) / n
+                        d = horiz(th) * math.sin(math.radians(tilt)) + Z * math.cos(math.radians(tilt))
+                        w = horiz(th + math.pi / 2)
+                        prim(bm, 'icosphere', 1, frame(c + horiz(th) * off + d * ln * 0.5, w * 0.3, d.cross(w) * 0.12,
+                                                       d * ln * 0.5), subdivisions=2, radius=1.0)
+                blob(bm, 2, c + Z * 0.25, 1.0, (0.22, 0.22, 0.14), sub=1)
+        prop('LilyPads', bm, *((mat('LilyPad'), mat('Lotus'), centre_mat) if lotus else (mat('LilyPad'),)))
 
-    # arched footbridge: planks on a sine arch, side stringers, posts with knobbed ends, two rails, four piers
-    def deck_pt(s):
-        return B0 + BDIR * s + Z * (0.25 + H_BR * math.sin(math.pi * s / L_BR))
+    if bridge:
+        # arched footbridge: planks on a sine arch, side stringers, posts with knobbed ends, two rails, four piers
+        def deck_pt(s):
+            return B0 + BDIR * s + Z * (0.25 + H_BR * math.sin(math.pi * s / L_BR))
 
-    def deck_t(s):
-        return (deck_pt(s + 0.01) - deck_pt(s - 0.01)).normalized()
+        def deck_t(s):
+            return (deck_pt(s + 0.01) - deck_pt(s - 0.01)).normalized()
 
-    ss = [L_BR * k / 400 for k in range(401)]
-    arc = [0.0]
-    for s0, s1 in zip(ss, ss[1:]):
-        arc.append(arc[-1] + (deck_pt(s1) - deck_pt(s0)).length)
+        ss = [L_BR * k / 400 for k in range(401)]
+        arc = [0.0]
+        for s0, s1 in zip(ss, ss[1:]):
+            arc.append(arc[-1] + (deck_pt(s1) - deck_pt(s0)).length)
 
-    def s_at(frac):  # bridge parameter at a fraction of the arch's length
-        return ss[min(bisect.bisect(arc, frac * arc[-1]), 400)]
+        def s_at(frac):  # bridge parameter at a fraction of the arch's length
+            return ss[min(bisect.bisect(arc, frac * arc[-1]), 400)]
 
-    bm = bmesh.new()
-    n = int(arc[-1] / 0.8)
-    for j in range(n):
-        s = s_at((j + 0.5) / n)
-        t = deck_t(s)
-        up = t.cross(BSIDE)
-        prim(bm, 'cube', 0, frame(deck_pt(s) - up * 0.15, t * 0.68, BSIDE * (W_BR + rng.uniform(-0.15, 0.15)), up * 0.3),
-             size=1.0)
-    line = [s_at(k / 40) for k in range(41)]
-    for side in (-1, 1):
-        tube(bm, 0, [deck_pt(s) + BSIDE * side * (W_BR / 2 - 0.3) - deck_t(s).cross(BSIDE) * 0.45 for s in line], 0.3,
-             side=BSIDE)
-        rail = BSIDE * side * (W_BR / 2 - 0.15)
-        tube(bm, 1, [deck_pt(s) + rail + Z * 2.0 for s in line], 0.17, side=BSIDE)
-        tube(bm, 1, [deck_pt(s) + rail + Z * 1.05 for s in line], 0.11, side=BSIDE)
-        for i in range(9):
-            b = deck_pt(s_at(i / 8)) + rail
-            end = i in (0, 8)
-            rod(bm, 1, b - Z * 0.3, b + Z * (2.3 if end else 2.05), 0.3 if end else 0.18, 0.3 if end else 0.18,
-                seg=8 if end else 4)
-            if end:
-                blob(bm, 1, b + Z * 2.65, 0.4)
-        for s in (L_BR * 0.3, L_BR * 0.7):
-            p = deck_pt(s) + BSIDE * side * (W_BR / 2 - 0.3)
-            rod(bm, 0, Vector((p.x, p.y, -1.3)), p - Z * 0.4, 0.26, 0.26, seg=8)
-    prop('Bridge', bm, mat('Wood'), mat('WoodDark'), sharp=65)
+        bm = bmesh.new()
+        n = int(arc[-1] / 0.8)
+        for j in range(n):
+            s = s_at((j + 0.5) / n)
+            t = deck_t(s)
+            up = t.cross(BSIDE)
+            prim(bm, 'cube', 0, frame(deck_pt(s) - up * 0.15, t * 0.68, BSIDE * (W_BR + rng.uniform(-0.15, 0.15)), up * 0.3),
+                 size=1.0)
+        line = [s_at(k / 40) for k in range(41)]
+        for side in (-1, 1):
+            tube(bm, 0, [deck_pt(s) + BSIDE * side * (W_BR / 2 - 0.3) - deck_t(s).cross(BSIDE) * 0.45 for s in line], 0.3,
+                 side=BSIDE)
+            rail = BSIDE * side * (W_BR / 2 - 0.15)
+            tube(bm, 1, [deck_pt(s) + rail + Z * 2.0 for s in line], 0.17, side=BSIDE)
+            tube(bm, 1, [deck_pt(s) + rail + Z * 1.05 for s in line], 0.11, side=BSIDE)
+            for i in range(9):
+                b = deck_pt(s_at(i / 8)) + rail
+                end = i in (0, 8)
+                rod(bm, 1, b - Z * 0.3, b + Z * (2.3 if end else 2.05), 0.3 if end else 0.18, 0.3 if end else 0.18,
+                    seg=8 if end else 4)
+                if end:
+                    blob(bm, 1, b + Z * 2.65, 0.4)
+            for s in (L_BR * 0.3, L_BR * 0.7):
+                p = deck_pt(s) + BSIDE * side * (W_BR / 2 - 0.3)
+                rod(bm, 0, Vector((p.x, p.y, -1.3)), p - Z * 0.4, 0.26, 0.26, seg=8)
+        prop('Bridge', bm, mat('Wood'), mat('WoodDark'), sharp=65)
 
-    # stone lantern (toro): foot, post, platform, glowing firebox between six pillars, eaves, roof, finial
-    bm = bmesh.new()
-    for z0, z1, r0, r1, seg, mi in ((0, 0.9, 2.0, 1.75, 6, 0), (0.9, 4.4, 0.75, 0.62, 10, 0), (4.4, 5.2, 1.35, 1.9, 6, 0),
-                                    (5.2, 7.0, 1.0, 1.0, 12, 1), (7.0, 7.35, 2.75, 2.9, 6, 0), (7.35, 8.7, 2.9, 0.4, 6, 0)):
-        prim(bm, 'cone', mi, Matrix.Translation(LANTERN + Z * ((z0 + z1) / 2)), segments=seg, radius1=r0, radius2=r1,
-             depth=z1 - z0, cap_ends=True)
-    for k in range(6):
-        c = LANTERN + horiz(k * math.pi / 3 + math.pi / 6) * 1.2
-        rod(bm, 0, c + Z * 5.2, c + Z * 7.0, 0.24, 0.24, seg=4)
-    blob(bm, 0, LANTERN + Z * 9.05, 0.5)
-    rod(bm, 0, LANTERN + Z * 9.4, LANTERN + Z * 10.1, 0.28, 0.0, seg=8)
-    glow = mat('LanternGlow')
-    glow.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = srgb('ffcf7a')
-    glow.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 0.6
-    prop('Lantern', bm, mat('LanternStone'), glow, sharp=40)
+    if lantern:
+        # stone lantern (toro): foot, post, platform, glowing firebox between six pillars, eaves, roof, finial
+        bm = bmesh.new()
+        for z0, z1, r0, r1, seg, mi in ((0, 0.9, 2.0, 1.75, 6, 0), (0.9, 4.4, 0.75, 0.62, 10, 0), (4.4, 5.2, 1.35, 1.9, 6, 0),
+                                        (5.2, 7.0, 1.0, 1.0, 12, 1), (7.0, 7.35, 2.75, 2.9, 6, 0), (7.35, 8.7, 2.9, 0.4, 6, 0)):
+            prim(bm, 'cone', mi, Matrix.Translation(LANTERN + Z * ((z0 + z1) / 2)), segments=seg, radius1=r0, radius2=r1,
+                 depth=z1 - z0, cap_ends=True)
+        for k in range(6):
+            c = LANTERN + horiz(k * math.pi / 3 + math.pi / 6) * 1.2
+            rod(bm, 0, c + Z * 5.2, c + Z * 7.0, 0.24, 0.24, seg=4)
+        blob(bm, 0, LANTERN + Z * 9.05, 0.5)
+        rod(bm, 0, LANTERN + Z * 9.4, LANTERN + Z * 10.1, 0.28, 0.0, seg=8)
+        glow = mat('LanternGlow')
+        glow.node_tree.nodes['Principled BSDF'].inputs['Emission Color'].default_value = srgb('ffcf7a')
+        glow.node_tree.nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 0.6
+        prop('Lantern', bm, mat('LanternStone'), glow, sharp=40)
 
     # rocks round the pond and in the corners, plus pebbles
     ROCKS = [(pond_pt(math.radians(a)) + horiz(math.radians(a)) * gap, r) for a, gap, r in
-             ((10, 2.6, 2.6), (120, 2.2, 1.8), (165, 2.0, 1.4), (290, 2.4, 1.9))]
+             ((10, 2.6, 2.6), (120, 2.2, 1.8), (165, 2.0, 1.4), (290, 2.4, 1.9)) if pond]
     ROCKS += [(Vector(p), r) for p, r in (((29, -29, 0), 2.4), ((-28, -29, 0), 1.7), ((28, 28, 0), 2.0),
                                            ((-30, 27, 0), 2.8), ((-3.5, 15, 0), 1.5), ((-22, -2, 0), 1.2),
                                            ((20, 17, 0), 1.8), ((23.5, 15, 0), 1.0)) + tuple(rocks)]
@@ -540,14 +563,14 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
             blob(bm, 2 + n_mounds % 2, p, r, (1.0, 0.8, 0.3), sub=3, rough=0.1, yaw=rng.uniform(0, 6.3))
     while n_tufts < tufts:
         p = ground_pt(0.3)
-        if not open_ground(p, 0):
+        if not open_ground(p, 0) or flat(p - FOOT).length < 9.5:  # blades lean in up to 2.3; props stay 7 off the foot
             continue
         n_tufts += 1
         mi = rng.randrange(2)
         for _ in range(rng.randint(7, 11)):
             phi, tilt, h = rng.uniform(0, 2 * math.pi), math.radians(rng.uniform(5, 38)), rng.uniform(1.4, 2.8)
             b = p + horiz(phi) * rng.uniform(0, 0.6) - Z * 0.1
-            rod(bm, mi, b, b + (horiz(phi) * math.sin(tilt) + Z * math.cos(tilt)) * h, 0.24, 0.0, seg=3, cap=False)
+            rod(bm, mi, b, b + (horiz(phi) * math.sin(tilt) + Z * math.cos(tilt)) * h, 0.24, 0.0, seg=3)  # capped: open blades flip the slot sampler's ray parity
     prop('Grass', bm, mat('GrassDark'), mat('GrassLight'), mat('MossDark'), mat('MossLight'))
 
     # flowers in small clumps: five-petal heads on stems, in two colours
@@ -600,19 +623,21 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     prop_obs = list(props.children)
     solid = [bvh_of(*[ob for ob in prop_obs if ob != water])]
     bvh_bed, bvh_chunk, bvh_water = (bvh_of(base, keep=lambda f: f.material_index == 2),
-                                     bvh_of(base, keep=lambda f: f.material_index == 3), bvh_of(water))
+                                     bvh_of(base, keep=lambda f: f.material_index == 3), pond and bvh_of(water))
     # the upper slab only: the lower tier's top (z = -3.1) and the chunks sit inside it, and those hidden faces would
     # be the nearest surface for lawn slots below z = -1.55, fooling the closest-point test (rays all point up, so
     # parity never sees the dropped faces)
     bvh_base = bvh_of(base, keep=lambda f: f.center.z > -3.0)
-    WOOD, STONE = [bpy.data.objects['Bridge']], [bpy.data.objects['Lantern'], bpy.data.objects['Rocks']]
+    WOOD = [bpy.data.objects['Bridge']] if bridge else []
+    STONE = ([bpy.data.objects['Lantern']] if lantern else []) + [bpy.data.objects['Rocks']]
     bvh_wood, bvh_stone = [bvh_of(ob) for ob in WOOD], [bvh_of(ob) for ob in STONE]
 
     def rules(e):  # class -> slot test; e loosens the margins to re-test the rounded slots
         r = {0: lambda p: p.z >= 0.3 - e and inside(p, bvh_t, MARGIN_TRUNK - e),  # only above the soil
              1: lambda p: inside(p, bvh_b, MARGIN_BLOSSOM - e),
              4: lambda p: (-2.2 - e <= p.z <= -0.6 + e and pond_gap(p) > POND_CLEAR - e  # not under the basin
-                           and bvh_bed.find_nearest(p)[3] >= POND_CLEAR - e and inside(p, [bvh_base], MARGIN_LAWN - e)
+                           and (not pond or bvh_bed.find_nearest(p)[3] >= POND_CLEAR - e)
+                           and inside(p, [bvh_base], MARGIN_LAWN - e)
                            and clear(p, solid + bvh_t, MARGIN_PROP - e)),
              5: lambda p: p.z >= 0.5 - e and inside(p, bvh_wood, MARGIN_PROP - e),  # tile clear of the lawn
              6: lambda p: p.z >= 0.5 - e and inside(p, bvh_stone, MARGIN_PROP - e),
@@ -625,9 +650,9 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     RULE, want = rules(0.0), {c: round(N_SOLID * s) for c, s in SHARES.items()}
     # shortcut: a prop class with nothing found in 1e6 tries counts as having no room; partial fills fail the check below
     pts = {0: sample([trunk], want[0], RULE[0], zlo=0.3),
-           5: sample(WOOD, want[5], RULE[5], zlo=0.5, tries=10 ** 6),
+           5: sample(WOOD, want[5], RULE[5], zlo=0.5, tries=10 ** 6) if bridge else [],
            6: sample(STONE, want[6], RULE[6], zlo=0.5, tries=10 ** 6),
-           7: sample([water], want[7], RULE[7], zlo=-1.7, zhi=0.0, tries=10 ** 6)}
+           7: sample([water], want[7], RULE[7], zlo=-1.7, zhi=0.0, tries=10 ** 6) if pond else []}
     bloom_pts = sample([blossoms], N_SOLID - sum(map(len, pts.values())), RULE[1])
     pts[4] = sample([base], N_LAWN, RULE[4], zlo=-2.2, zhi=-0.6)
 
@@ -652,7 +677,9 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     os.makedirs(os.path.dirname(slots_path), exist_ok=True)
     base_size = round(2 * max(max(abs(v.co.x), abs(v.co.y)) for v in base.data.vertices if v.co.z > -3.0), 2)
     canopy = blossoms.data.materials  # deep..pale; class 2 takes the second, 3 the palest
-    palette = ['#' + to_hex(ob.data.materials[0]) for ob in (trunk, base, WOOD[0], STONE[0], water)]
+    # a switched-off set piece still carries its class colour, so every scene has all eight
+    palette = ['#' + (to_hex(ob.data.materials[0]) if ob else colours[key]) for ob, key in
+               ((trunk, None), (base, None), (bridge and WOOD[0], 'Wood'), (STONE[0], None), (water, 'Water'))]
     palette[1:1] = ['#' + to_hex(m) for m in (canopy[0], canopy[1], canopy[-1])]
     assert palette[4] == '#' + colours['Moss'] and palette[5] == '#' + colours['Wood'], palette  # to_hex round-trips
     with open(slots_path, 'w') as f:
@@ -687,7 +714,8 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
         vs = [v.co for v in ob.data.vertices]
         assert all(max(abs(v.x), abs(v.y)) <= 36 and -2 <= v.z <= 14 for v in vs), ('prop outside the base', ob.name)
         assert min((flat(v) - flat(FOOT)).length for v in vs) > 7, ('prop in the trunk area', ob.name)
-    assert [m.name for m in water.data.materials] == ['Water'] and all(0 <= v.co.z <= 0.1 for v in water.data.vertices)
+    assert not pond or ([m.name for m in water.data.materials] == ['Water']
+                        and all(0 <= v.co.z <= 0.1 for v in water.data.vertices))
     bv = [v.co for v in base.data.vertices]
     assert max(v.z for v in bv) <= 1e-4 and min(v.z for v in bv) >= -8 and max(max(abs(v.x), abs(v.y)) for v in bv) <= 36
 
@@ -707,7 +735,8 @@ def finish(name, colours, trunk, shells, blossoms, tips, root, rocks=(), pebbles
     assert {gj['nodes'][i]['name'] for i in gj['scenes'][0]['nodes']} == {'Trunk', 'Blossoms', 'Base', 'Props'}
     assert {gj['nodes'][i]['name'] for i in nodes['Props']['children']} == {ob.name for ob in prop_obs}
     mats = {m['name']: m for m in gj['materials']}
-    assert mats['Water'].get('alphaMode') == 'BLEND' and abs(mats['Water']['pbrMetallicRoughness']['baseColorFactor'][3] - 0.7) < 1e-3
+    assert not pond or (mats['Water'].get('alphaMode') == 'BLEND'
+                        and abs(mats['Water']['pbrMetallicRoughness']['baseColorFactor'][3] - 0.7) < 1e-3)
     assert all(m.get('alphaMode', 'OPAQUE') == 'OPAQUE' for k, m in mats.items() if k != 'Water'), 'only Water is transparent'
     counts = {ob.name: tris(ob.data) for ob in [trunk, blossoms, base] + prop_obs}
     assert sum(counts.values()) < 250000 and len(glb) < 5e6, (sum(counts.values()), len(glb))

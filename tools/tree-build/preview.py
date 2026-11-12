@@ -1,16 +1,20 @@
 """Render a preview of an exported tree GLB.
-Blender -b -P tools/tree-build/preview.py -- public/models/sakura.glb out.png [camX camY camZ [lookX lookY lookZ]]
+Blender -b -P tools/tree-build/preview.py -- public/models/sakura.glb out.png [camX camY camZ [lookX lookY lookZ]] [--size=800] [--transparent]
 """
 import bpy, math, sys
 from mathutils import Vector
 
-glb, out, *view = sys.argv[sys.argv.index('--') + 1:]
+args = sys.argv[sys.argv.index('--') + 1:]
+flags = dict(a[2:].partition('=')[::2] for a in args if a.startswith('--'))
+glb, out, *view = [a for a in args if not a.startswith('--')]
 view = tuple(map(float, view))
 bpy.ops.wm.read_factory_settings(use_empty=True)
 bpy.ops.import_scene.gltf(filepath=glb)
 scene = bpy.context.scene
 scene.render.engine = 'BLENDER_EEVEE'
-scene.render.resolution_x = scene.render.resolution_y = 800
+scene.render.resolution_x = scene.render.resolution_y = int(flags.get('size') or 800)
+scene.render.film_transparent = 'transparent' in flags  # PNG keeps the alpha (site thumbnails)
+scene.render.image_settings.color_mode = 'RGBA' if 'transparent' in flags else 'RGB'
 scene.view_settings.view_transform = 'Standard'
 scene.world = bpy.data.worlds.new('World')
 scene.world.color = (0.55, 0.6, 0.68)

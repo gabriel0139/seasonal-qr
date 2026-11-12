@@ -1,54 +1,253 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Seasonal QR</title>
-    <meta name="description" content="A seasonal 3D tree that unfolds into a real, scannable QR code. Runs in your browser; nothing is uploaded." />
-    <meta property="og:title" content="Seasonal QR" />
-    <meta property="og:description" content="A seasonal 3D tree that unfolds into a real, scannable QR code." />
-    <meta name="theme-color" content="#f6f4ee" />
+    <title>Seasonal QR · a garden that falls into a QR code</title>
+    <meta name="description" content="Type a link, pick one of eight 3D garden scenes and watch it shed, tile by tile, into a real, scannable QR code. Open source; runs in your browser, nothing is uploaded." />
+    <meta name="theme-color" content="#f1ede3" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/shippori-mincho-500.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- TODO(deploy): scrapers need absolute URLs. Replace the two "/og.jpg" values with "<origin>/og.jpg" and add <meta property="og:url" content="<origin>/"> once the Vercel origin is known. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Seasonal QR" />
+    <meta property="og:title" content="Seasonal QR · a garden that falls into a QR code" />
+    <meta property="og:description" content="Eight 3D garden scenes that shed, tile by tile, into a real, scannable QR code. Open source; nothing is uploaded." />
+    <meta property="og:image" content="/og.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="A cherry tree diorama beside the QR code its tiles land as, in the same pinks." />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Seasonal QR · a garden that falls into a QR code" />
+    <meta name="twitter:description" content="Eight 3D garden scenes that shed, tile by tile, into a real, scannable QR code." />
+    <meta name="twitter:image" content="/og.jpg" />
     <style>
-      :root { --bg: #f6f4ee; --card: #fff; --ink: #1d1b17; --muted: #6b665c; --line: #e4dfd3; --accent: #8c1f52; --accent-soft: #f2a3b7; --radius: 16px; }
+      /* Fonts are self-hosted (public/fonts/LICENCES.md): no request leaves this origin. */
+      @font-face { font-family: 'Shippori Mincho'; src: url(/fonts/shippori-mincho-500.woff2) format('woff2'); font-weight: 500; font-display: swap; }
+      @font-face { font-family: 'Instrument Sans'; src: url(/fonts/instrument-sans.woff2) format('woff2'); font-weight: 400 700; font-display: swap; }
+      @font-face { font-family: 'IBM Plex Mono'; src: url(/fonts/ibm-plex-mono-400.woff2) format('woff2'); font-weight: 400; font-display: swap; }
+
+      /* The scene sets these three (App.tsx); registered so the accents cross-fade on a scene change. */
+      @property --paper { syntax: '<color>'; inherits: true; initial-value: #f1ede3; }
+      @property --accent { syntax: '<color>'; inherits: true; initial-value: #5d4a3e; }
+      @property --bloom { syntax: '<color>'; inherits: true; initial-value: #c9b9a5; }
+
+      :root {
+        --ink: color-mix(in oklab, var(--accent) 16%, #15110e);
+        --muted: color-mix(in oklab, var(--ink) 70%, var(--paper));
+        --line: color-mix(in oklab, var(--ink) 15%, var(--paper));
+        --wash: color-mix(in oklab, var(--ink) 4.5%, var(--paper));
+        --raised: color-mix(in oklab, #fff 62%, var(--paper));
+        --serif: 'Shippori Mincho', 'Iowan Old Style', 'Palatino Linotype', Palatino, 'Hiragino Mincho ProN', 'Yu Mincho', Georgia, serif;
+        --sans: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        --mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+        --gutter: clamp(16px, 3.4vw, 48px);
+        --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        background: var(--paper);
+        color: var(--ink);
+        /* The paper cuts with the scene: the canvas switches its clear colour at once, and a fade would show its edge. */
+        transition: --accent 0.7s ease, --bloom 0.7s ease;
+        scroll-padding-top: 24px;
+      }
+      @media (prefers-reduced-motion: reduce) { :root { transition: none; } }
       * { box-sizing: border-box; }
-      body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
-      a { color: var(--accent); }
-      header, main, footer { width: min(1120px, 100% - 32px); margin: 0 auto; }
-      header { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; padding: 28px 0 20px; }
-      header h1 { margin: 0; font: 600 30px/1.1 "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif; letter-spacing: -0.01em; }
-      header h1 small { display: block; margin-top: 6px; font: 15px/1.4 system-ui, sans-serif; color: var(--muted); }
-      header a { font-size: 14px; text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); }
-      main { display: grid; gap: 24px; align-items: start; padding-bottom: 24px; }
-      @media (min-width: 1000px) { main { grid-template-columns: auto 1fr; } .controls { position: sticky; top: 24px; } }
-      .stage { justify-self: center; max-width: 100%; border-radius: var(--radius); overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 24px 48px -24px rgba(40,30,10,.35); background: var(--card); }
-      .stage canvas { display: block; max-width: 100%; }
-      .controls { display: flex; flex-direction: column; gap: 18px; padding: 24px; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); }
-      .controls label, .field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
-      .controls input:not([type='range']):not([type='checkbox']) { width: 100%; font: 16px/1.4 inherit; font-family: inherit; color: var(--ink); padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); }
-      .controls input:focus-visible, .controls button:focus-visible, .controls a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-      .hint { margin: 0; font-size: 13px; font-weight: 400; color: var(--muted); }
-      .error { margin: -12px 0 0; min-height: 1.4em; font-size: 13px; font-weight: 500; color: #b00020; }
-      .density { margin: 0; font-size: 13px; font-weight: 400; color: var(--muted); }
-      .meter { display: flex; gap: 4px; }
-      .meter span { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+      body { margin: 0; font: 16px/1.55 var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; }
+      ::selection { background: color-mix(in oklab, var(--bloom) 55%, var(--paper)); color: var(--ink); }
+      a { color: inherit; text-decoration-color: color-mix(in oklab, currentColor 35%, transparent); text-underline-offset: 0.2em; text-decoration-thickness: 1px; }
+      a:hover { text-decoration-color: currentColor; }
+      :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+      button { font: inherit; color: inherit; }
+      img { display: block; max-width: 100%; height: auto; }
+      h1, h2, h3 { font-family: var(--serif); font-weight: 500; margin: 0; text-wrap: balance; }
+      p { margin: 0; text-wrap: pretty; }
+      code { font: 0.86em/1.4 var(--mono); }
+      .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+      .skip { position: absolute; left: 16px; top: -60px; z-index: 2; padding: 10px 14px; background: var(--ink); color: var(--paper); border-radius: 8px; text-decoration: none; }
+      .skip:focus { top: 12px; }
+      .label { font: 12px/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+      /* Header */
+      .top { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px var(--gutter); max-width: 1600px; margin: 0 auto; }
+      .brand { display: inline-flex; align-items: center; gap: 12px; text-decoration: none; font: 500 21px/1 var(--serif); letter-spacing: -0.01em; min-height: 40px; }
+      .seal { display: inline-grid; place-items: center; width: 30px; height: 30px; border-radius: 3px; background: var(--accent); color: var(--paper); font: 500 18px/1 var(--serif); }
+      .top nav { display: flex; align-items: center; gap: clamp(12px, 2vw, 28px); font-size: 14.5px; }
+      .top nav a { color: var(--muted); text-decoration: none; padding: 10px 0; }
+      .top nav a:hover { color: var(--ink); }
+      .top nav .gh { display: inline-flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink); }
+      .top nav .gh:hover { border-color: var(--ink); }
+      .gh svg { width: 17px; height: 17px; }
+      @media (max-width: 720px) { .top nav a:not(.gh) { display: none; } .top nav .gh span { display: none; } .top nav .gh { padding: 0; width: 44px; height: 44px; justify-content: center; } }
+
+      /* Hero: the live scene is the page. Areas follow stageRoom() in App.tsx. */
+      .hero { --room: 600px; display: grid; gap: 0 var(--gutter); max-width: 1600px; margin: 0 auto; padding: 4px var(--gutter) 0; }
+      .title, .lede, .dock, .side { min-width: 0; }
+      .hero { grid-template-columns: minmax(0, 1fr); grid-template-areas: 'title' 'stage' 'dock' 'side' 'lede'; }
+      @media (min-width: 900px) {
+        /* The last row is flexible, so a tall side column leaves its extra height below the dock, never between scene and dock. */
+        .hero { grid-template-columns: var(--room) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; grid-template-areas: 'stage title' 'stage side' 'dock side' 'lede side'; }
+        .hero .title { padding-top: 0; }
+        .hero { min-height: calc(var(--room) + 200px); } /* holds the first screen while the scene loads */
+      }
+      @media (min-width: 1200px) {
+        .hero { grid-template-columns: minmax(0, 1fr) var(--room) minmax(0, 1fr); grid-template-rows: auto auto auto 1fr; grid-template-areas: 'title stage side' 'lede stage side' 'lede dock side' 'lede . side'; }
+        .hero .title { padding-top: clamp(8px, 2vh, 20px); }
+      }
+      .title { grid-area: title; padding: clamp(8px, 2vh, 20px) 0 clamp(16px, 3vh, 28px); }
+      .eyebrow { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 18px; }
+      @media (max-width: 899.98px) {
+        .top { padding-block: 12px; }
+        .title { padding: 4px 0 18px; }
+        .eyebrow { margin-bottom: 10px; }
+        h1 { max-width: none; }
+      }
+      .eyebrow b { font-weight: 400; color: var(--ink); }
+      h1 { font-size: clamp(1.9rem, 1.1rem + 2.4vw, 3.25rem); line-height: 1.06; letter-spacing: -0.02em; max-width: 13ch; }
+      .lede { grid-area: lede; display: flex; flex-direction: column; justify-content: space-between; gap: 32px; padding: 8px 0 28px; }
+      .lede > p { font-size: 17px; line-height: 1.6; color: color-mix(in oklab, var(--ink) 88%, var(--paper)); max-width: 36ch; }
+      .facts { display: grid; grid-template-columns: auto 1fr; gap: 10px 18px; margin: 0; padding-top: 16px; border-top: 1px solid var(--line); font-size: 14px; }
+      .facts dt { font: 12px/1.6 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      .facts dd { margin: 0; }
+
+      .stage { grid-area: stage; position: relative; width: var(--room); max-width: 100%; aspect-ratio: 1; display: grid; place-items: center; justify-self: center; }
+      .stage canvas { display: block; }
+      /* Registration ticks mark the square the code lands in; they sit outside the canvas, never over it. */
+      .stage::before, .stage::after { content: ''; position: absolute; inset: -10px; pointer-events: none; border: 1px solid var(--line); clip-path: polygon(0 0, 22px 0, 22px 1px, 1px 1px, 1px 22px, 0 22px, 0 calc(100% - 22px), 1px calc(100% - 22px), 1px calc(100% - 1px), 22px calc(100% - 1px), 22px 100%, 0 100%); }
+      .stage::after { transform: scaleX(-1); }
+      @media (max-width: 899.98px) { .stage::before, .stage::after { inset: -6px; } }
+      .sprout { display: grid; justify-items: center; gap: 18px; }
+      .sprout .tiles { display: grid; grid-template-columns: repeat(5, 12px); gap: 4px; }
+      .sprout .tiles i { width: 12px; height: 12px; border-radius: 2px; background: var(--line); animation: sprout 1.6s var(--d) infinite ease-in-out; }
+      @keyframes sprout { 0%, 100% { background: var(--line); } 40% { background: var(--accent); } }
+      @media (prefers-reduced-motion: reduce) { .sprout .tiles i { animation: none; } }
+      .fallback-code { width: min(100%, 360px); image-rendering: pixelated; }
+      .dock > input { height: 48px; padding: 0 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); color: var(--ink); font: 16px var(--sans); }
+
+      /* Dock: the plate's caption, directly under the scene. */
+      .controls { display: contents; }
+      .dock { grid-area: dock; display: grid; gap: 12px; width: min(100%, var(--room)); justify-self: center; padding: 16px 0 28px; }
+      .scrub { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
+      @media (min-width: 900px) { .scrub { order: -1; margin-bottom: -6px; } } /* above the text box, like a timeline under the scene; after it in tab order */
+      .scrub > span { font: 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      input[type='range'] { -webkit-appearance: none; appearance: none; width: 100%; height: 40px; margin: 0; background: transparent; cursor: pointer; }
+      input[type='range']::-webkit-slider-runnable-track { height: 2px; border-radius: 1px; background: linear-gradient(to right, var(--accent) calc(var(--p, 0) * 100%), var(--line) 0); }
+      input[type='range']::-moz-range-track { height: 2px; border-radius: 1px; background: linear-gradient(to right, var(--accent) calc(var(--p, 0) * 100%), var(--line) 0); }
+      input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; margin-top: -8px; border-radius: 50%; background: var(--accent); border: 3px solid var(--paper); box-shadow: 0 0 0 1px var(--accent); }
+      input[type='range']::-moz-range-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--accent); border: 3px solid var(--paper); box-shadow: 0 0 0 1px var(--accent); }
+      input[type='range']:focus-visible { outline: none; }
+      input[type='range']:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 1px var(--accent), 0 0 0 6px color-mix(in oklab, var(--accent) 35%, transparent); }
+      input[type='range']:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 1px var(--accent), 0 0 0 6px color-mix(in oklab, var(--accent) 35%, transparent); }
+      @media (forced-colors: active) { input[type='range']:focus-visible, .field:focus-within { outline: 2px solid Highlight; outline-offset: 2px; } } /* box-shadow rings vanish there */
+      .compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; margin: 0; }
+      /* The label sits inside the field box, so the dock stays short enough for a big stage. */
+      .field { display: grid; align-content: center; gap: 3px; min-width: 0; height: 60px; padding: 0 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--raised); cursor: text; transition: border-color 0.2s; }
+      .field:hover { border-color: color-mix(in oklab, var(--ink) 35%, var(--paper)); }
+      .field:focus-within { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+      .field .label { font-size: 11px; line-height: 1; }
+      .field input { min-width: 0; width: 100%; padding: 0; border: 0; background: none; color: var(--ink); font: 16px/1.3 var(--sans); outline: none; }
+      .field input::placeholder { color: var(--muted); }
+      .field:has([aria-invalid='true']) { border-color: #a3121c; }
+      .primary { height: 60px; min-width: 172px; padding: 0 22px; border: 0; border-radius: 12px; background: var(--accent); color: var(--paper); font: 600 16px/1 var(--sans); letter-spacing: 0.005em; cursor: pointer; white-space: nowrap; transition: transform 0.15s var(--ease), background-color 0.2s; }
+      .primary:hover { background: color-mix(in oklab, var(--accent) 86%, #000); }
+      .primary:active { transform: scale(0.98); }
+      .primary:focus-visible { outline-color: var(--ink); }
+      @media (max-width: 480px) { .compose { grid-template-columns: 1fr; } }
+      .readout { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; font-size: 13.5px; color: var(--muted); }
+      .meter { display: flex; gap: 3px; }
+      .meter span { width: 18px; height: 4px; border-radius: 2px; background: var(--line); }
       .meter span.active { background: var(--accent); }
-      .seasons { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; background: var(--bg); border-radius: 10px; }
-      .seasons button { padding: 8px 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted); font: 600 13px/1 inherit; font-family: inherit; cursor: pointer; }
-      .seasons button[aria-pressed='true'] { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
-      .primary { padding: 14px; border: 0; border-radius: 12px; background: var(--accent); color: #fff; font: 600 16px/1 inherit; font-family: inherit; cursor: pointer; }
-      .primary:hover { filter: brightness(1.1); }
-      input[type='range'] { width: 100%; accent-color: var(--accent); margin: 0; }
+      .density { font: 12.5px/1.4 var(--mono); color: var(--ink); }
+      .error { margin: 0; font-size: 14px; font-weight: 500; color: #a3121c; }
+      .error:empty { margin-top: -12px; }
+
+      /* Side: scene picker and exports */
+      .side { grid-area: side; display: flex; flex-direction: column; gap: 36px; padding: 8px 0 28px; }
+      @media (min-width: 1200px) { .side { justify-content: space-between; padding-top: clamp(8px, 2vh, 20px); } }
+      .picker { border: 0; margin: 0; padding: 0; min-width: 0; display: grid; gap: 4px; }
+      .picker legend { padding: 0; margin-bottom: 10px; }
+      .group { display: grid; grid-template-columns: 48px 1fr 1fr; align-items: center; gap: 6px; padding: 5px 0; border-top: 1px solid var(--line); }
+      .group:first-of-type { border-top: 0; }
+      .season-tag { display: grid; justify-items: start; gap: 2px; font: 12px/1.2 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+      .season-tag [lang='ja'] { font: 500 22px/1 var(--serif); letter-spacing: 0; text-transform: none; color: var(--ink); }
+      .pick { display: grid; justify-items: center; gap: 0; min-width: 0; padding: 4px 4px 7px; border: 1px solid transparent; border-radius: 12px; background: none; cursor: pointer; transition: background-color 0.2s, border-color 0.2s; }
+      .pick img { width: clamp(52px, calc(var(--room) * 0.125), 80px); height: auto; aspect-ratio: 1; object-fit: contain; transition: transform 0.35s var(--ease); }
+      .pick span { font-size: 13.5px; line-height: 1.2; color: var(--muted); }
+      .pick:hover { background: var(--wash); }
+      @media (hover: hover) { .pick:hover img { transform: translateY(-2px) scale(1.04); } }
+      .pick[aria-pressed='true'] { background: var(--raised); border-color: var(--line); }
+      .pick[aria-pressed='true'] span { color: var(--ink); font-weight: 600; }
+      .pick[aria-busy='true'] img { animation: pulse 1s ease-in-out infinite alternate; }
+      @keyframes pulse { to { opacity: 0.45; } }
+      @media (prefers-reduced-motion: reduce) { .pick img, .pick:hover img { transition: none; transform: none; } .pick[aria-busy='true'] img { animation: none; } }
+      .about { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 10px; font-size: 13.5px; color: var(--muted); }
+      .about a { color: var(--ink); padding: 10px 0; margin: -10px 0; }
+      .keep { display: grid; gap: 10px; }
       .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-      .actions a, .actions button { display: inline-flex; justify-content: center; align-items: center; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink); font: 500 14px/1 inherit; font-family: inherit; text-decoration: none; cursor: pointer; }
-      .actions a:hover, .actions button:hover { border-color: var(--ink); }
-      .actions button:disabled { opacity: .6; cursor: progress; }
-      .check { flex-direction: row !important; align-items: center; font-weight: 400 !important; }
-      .check input { margin: 0; accent-color: var(--accent); }
-      .loading { color: var(--muted); padding: 48px 0; text-align: center; }
-      footer { padding: 24px 0 40px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
-      footer p { margin: 0 0 4px; }
-      .fallback { display: flex; flex-direction: column; gap: 12px; max-width: 480px; }
-      .fallback img { width: 100%; max-width: 320px; image-rendering: pixelated; border-radius: 8px; }
+      .actions a, .actions button { display: inline-flex; justify-content: center; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: transparent; font: 500 14.5px/1.2 var(--sans); text-decoration: none; text-align: center; cursor: pointer; transition: border-color 0.2s, background-color 0.2s; }
+      .actions a:hover, .actions button:hover { border-color: var(--ink); background: var(--raised); }
+      .actions button:disabled { opacity: 0.65; cursor: progress; }
+      .check { display: flex; align-items: center; gap: 10px; min-height: 40px; font-size: 14px; color: var(--muted); cursor: pointer; }
+      .check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); }
+      @media (max-width: 899.98px) {
+        .picker { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0 6px; }
+        .picker legend { grid-column: 1 / -1; }
+        .group { grid-template-columns: 1fr; grid-template-rows: auto; align-content: start; gap: 4px; border-top: 0; padding: 0; }
+        .season-tag { justify-items: center; gap: 4px; padding-bottom: 4px; font-size: 11px; }
+        .pick { padding: 4px 2px 8px; }
+        .pick img { width: 100%; height: auto; aspect-ratio: 1; }
+        .pick span { font-size: 12.5px; }
+      }
+
+      /* Enter: the words settle in once; the stage is never animated (scan-ready pixels). */
+      @media (prefers-reduced-motion: no-preference) {
+        .title, .lede, .dock, .side { animation: rise 0.9s var(--ease) both; }
+        .lede { animation-delay: 0.08s; } .dock { animation-delay: 0.16s; } .side { animation-delay: 0.24s; }
+        @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+      }
+
+      /* Story */
+      .chapter { max-width: 1600px; margin: 0 auto; padding: clamp(72px, 11vw, 150px) var(--gutter) 0; }
+      .chapter-head { display: grid; gap: 14px; max-width: 760px; margin-bottom: clamp(36px, 5vw, 64px); }
+      h2 { font-size: clamp(1.9rem, 1.2rem + 2vw, 3rem); line-height: 1.1; letter-spacing: -0.015em; }
+      .chapter-head p { font-size: 17px; color: color-mix(in oklab, var(--ink) 85%, var(--paper)); max-width: 56ch; }
+      .beats { list-style: none; margin: 0; padding: 0; display: grid; gap: 40px var(--gutter); grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr)); counter-reset: beat; }
+      .beat { display: grid; gap: 14px; align-content: start; }
+      .beat img { width: 100%; aspect-ratio: 1; border-radius: 14px; background: #e9f0c4; }
+      .beat h3 { font-size: 22px; line-height: 1.2; }
+      .beat h3::before { counter-increment: beat; content: '0' counter(beat); display: block; margin-bottom: 8px; font: 12px/1 var(--mono); letter-spacing: 0.08em; color: var(--muted); }
+      .beat p { font-size: 15px; color: color-mix(in oklab, var(--ink) 85%, var(--paper)); }
+      @media (max-width: 640px) { .beats { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 14px; } .beat { gap: 10px; } .beat h3 { font-size: 18px; } .beat p { font-size: 14px; } }
+
+      .gallery { display: grid; gap: clamp(28px, 3vw, 40px) var(--gutter); grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .column { display: grid; gap: clamp(20px, 2.4vw, 32px); align-content: start; }
+      .column > h3 { display: flex; align-items: baseline; gap: 10px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 15px; font-family: var(--mono); font-weight: 400; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+      .column > h3 [lang='ja'] { font: 500 28px/1 var(--serif); color: var(--ink); letter-spacing: 0; }
+      .card { display: grid; gap: 6px; }
+      .card > button { display: block; width: 100%; padding: 0; border: 0; border-radius: 16px; background: var(--wash); cursor: pointer; transition: background-color 0.25s, box-shadow 0.25s; }
+      .card > button img { width: 100%; aspect-ratio: 1; object-fit: contain; padding: 10%; transition: transform 0.5s var(--ease); }
+      .card > button:hover { background: color-mix(in oklab, var(--ink) 8%, var(--paper)); }
+      @media (hover: hover) { .card > button:hover img { transform: translateY(-4px) scale(1.03); } }
+      .card[data-active] > button { box-shadow: inset 0 0 0 2px var(--accent); }
+      .card h4 { margin: 8px 0 0; font: 500 21px/1.2 var(--serif); }
+      .card h4 small { margin-left: 8px; font: 12px/1 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); vertical-align: 2px; }
+      .card p { font-size: 14.5px; color: var(--muted); }
+      .card a { justify-self: start; font-size: 14px; padding: 10px 0; }
+      @media (prefers-reduced-motion: reduce) { .card > button img { transition: none; } .card > button:hover img { transform: none; } }
+      @media (max-width: 899.98px) { .gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+      @media (max-width: 520px) { .card h4 { font-size: 18px; } .card h4 small { display: block; margin: 4px 0 0; } .card p, .card a { font-size: 13px; } }
+
+      .open { display: grid; gap: 40px var(--gutter); grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
+      .open article { display: grid; gap: 12px; align-content: start; padding-top: 20px; border-top: 1px solid var(--ink); }
+      .open h3 { font-size: 24px; }
+      .open p { font-size: 15.5px; color: color-mix(in oklab, var(--ink) 85%, var(--paper)); }
+      .open pre { margin: 4px 0 0; padding: 14px 16px; overflow-x: auto; border-radius: 10px; background: var(--wash); font: 13px/1.6 var(--mono); }
+      .open .more { justify-self: start; padding: 10px 0; margin-top: -10px; font-size: 14.5px; font-weight: 500; }
+
+      footer { max-width: 1600px; margin: clamp(80px, 10vw, 140px) auto 0; padding: 28px var(--gutter) 48px; border-top: 1px solid var(--line); display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+      footer .sign { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 24px; margin-bottom: 8px; color: var(--ink); font: 500 17px/1.3 var(--serif); }
+      footer .sign span { font: 13px/1.5 var(--sans); color: var(--muted); }
+
+      .bare { margin: 0; }
     </style>
   </head>
   <body>

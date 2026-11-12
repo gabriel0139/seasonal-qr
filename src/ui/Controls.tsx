@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import { exportVideo } from '../export/video'
 import type { TilePair } from '../mapping'
 import { density, MAX_VERSION, QUIET_ZONE, type QrResult } from '../qr'
-import { seasons, type Season } from '../seasons'
+import type { Season } from '../seasons'
 
 interface Props {
   season: Season
-  seasonError: string | null
-  onSeason: (id: string) => void
+  /** the scene picker, rendered at the top of the side column */
+  picker: ReactNode
   tl: gsap.core.Timeline
   text: string
   error: string | null
@@ -57,13 +57,15 @@ const LABELS = ['Short', 'Medium', 'Dense'] as const
 /** Byte-mode capacity of version 10 at EC level M. */
 const MAX_BYTES = 213
 
-export function Controls({ season, seasonError, onSeason, tl, text, error, qr, pairs, onText, seed }: Props) {
+/** The dock under the scene (scrubber, text, reveal) and the side column (scene picker, exports); grid areas of the hero. */
+export function Controls({ season, picker, tl, text, error, qr, pairs, onText, seed }: Props) {
   const [progress, setProgress] = useState(tl.progress())
-  const [revealing, setRevealing] = useState(false)
   const [includeText, setIncludeText] = useState(false)
   const [copied, setCopied] = useState(false)
   const [exporting, setExporting] = useState<number | null>(null) // fraction done while a video export runs
   const [videoLabel, setVideoLabel] = useState('Export video')
+  // Read from the timeline, so the first-visit reveal and the scrubber keep the label right.
+  const forward = tl.isActive() ? !tl.reversed() : progress > 0.5
 
   async function onExportVideo() {
     setExporting(0)
@@ -98,68 +100,76 @@ export function Controls({ season, seasonError, onSeason, tl, text, error, qr, p
 
   return (
     <div className="controls" inert={exporting !== null}>
-      <label>
-        Link or text
-        <input value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} aria-describedby="text-error" placeholder="https://" />
-      </label>
-      <p id="text-error" role="alert" className="error">
-        {error}
-      </p>
-      <div className="field">
-        <span>Size</span>
-        <div className="meter" aria-hidden="true">
-          {LABELS.map((l) => (
-            <span key={l} className={l === info.label ? 'active' : undefined} />
-          ))}
+      <div className="dock">
+        <form
+          className="compose"
+          onSubmit={(e) => {
+            e.preventDefault()
+            tl.play()
+          }}
+        >
+          <label className="field">
+            <span className="label">Link or text</span>
+            <input id="text" value={text} onChange={(e) => onText(e.target.value)} aria-invalid={!!error} aria-describedby="text-error text-size" placeholder="https://" autoComplete="off" spellCheck={false} />
+          </label>
+          <button type="button" className="primary" onClick={() => (forward ? tl.reverse() : tl.play())}>
+            {forward ? 'Grow back' : 'Reveal the code'}
+          </button>
+        </form>
+        <p id="text-error" role="alert" className="error">
+          {error}
+        </p>
+        <div className="readout" id="text-size">
+          <span className="meter" aria-hidden="true">
+            {LABELS.map((l) => (
+              <span key={l} className={l === info.label ? 'active' : undefined} />
+            ))}
+          </span>
+          <span className="density">{summary}</span>
+          <span>Holds a few hundred bytes; for a file, paste its share link.</span>
         </div>
-        <p className="density">{summary}</p>
-        <p className="hint">A QR code holds a few hundred bytes. To share a document or folder, host it (Google Drive, Dropbox, a GitHub release) and paste its share link.</p>
+        <label className="scrub">
+          <span aria-hidden="true">Tree</span>
+          <input
+            type="range"
+            aria-label="Progress"
+            aria-valuetext={`${Math.round(progress * 100)}%`}
+            min={0}
+            max={1}
+            step={0.001}
+            value={progress}
+            style={{ '--p': progress } as CSSProperties}
+            onChange={(e) => tl.pause().progress(Number(e.target.value))}
+          />
+          <span aria-hidden="true">Code</span>
+        </label>
       </div>
-      <div className="field">
-        <span>Season</span>
-        <div className="seasons" role="group" aria-label="Season">
-          {Object.values(seasons).map((s) => (
-            <button key={s.id} type="button" aria-pressed={s.id === season.id} onClick={() => onSeason(s.id)}>
-              {s.name}
+      <div className="side">
+        {picker}
+        <section className="keep" aria-labelledby="keep">
+          <h2 id="keep" className="label">
+            Save and share
+          </h2>
+          <div className="actions">
+            <a href={pngHref} download="seasonal-qr.png">
+              Download PNG
+            </a>
+            <a href={svgHref} download="seasonal-qr.svg">
+              Download SVG
+            </a>
+            <button type="button" onClick={copyLink}>
+              {copied ? 'Copied' : 'Copy link'}
             </button>
-          ))}
-        </div>
-        {seasonError && (
-          <p role="alert" className="error">
-            {seasonError}
-          </p>
-        )}
+            <button type="button" onClick={onExportVideo} disabled={exporting !== null}>
+              {exporting === null ? videoLabel : `Exporting ${Math.round(exporting * 100)}%`}
+            </button>
+          </div>
+          <label className="check">
+            <input type="checkbox" checked={includeText} onChange={(e) => setIncludeText(e.target.checked)} />
+            Include the text in the copied link
+          </label>
+        </section>
       </div>
-      <button
-        className="primary"
-        onClick={() => {
-          if (revealing) tl.reverse()
-          else tl.play()
-          setRevealing(!revealing)
-        }}
-      >
-        {revealing ? 'Grow back' : 'Reveal the code'}
-      </button>
-      <label>
-        Progress
-        <input type="range" min={0} max={1} step={0.001} value={progress} onChange={(e) => tl.pause().progress(Number(e.target.value))} />
-      </label>
-      <div className="actions">
-        <a href={pngHref} download="seasonal-qr.png">
-          Download PNG
-        </a>
-        <a href={svgHref} download="seasonal-qr.svg">
-          Download SVG
-        </a>
-        <button onClick={copyLink}>{copied ? 'Copied' : 'Copy link'}</button>
-        <button onClick={onExportVideo} disabled={exporting !== null}>
-          {exporting === null ? videoLabel : `Exporting ${Math.round(exporting * 100)}%`}
-        </button>
-      </div>
-      <label className="check">
-        <input type="checkbox" checked={includeText} onChange={(e) => setIncludeText(e.target.checked)} />
-        Include the text in the copied link
-      </label>
     </div>
   )
 }

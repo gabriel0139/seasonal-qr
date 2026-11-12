@@ -27,12 +27,11 @@ export function QrScene(props: Props) {
   const css = (props.gridSize * props.modulePx) / window.devicePixelRatio
   return (
     <div style={{ width: css, height: css }}>
-      <Canvas flat gl={{ antialias: false, preserveDrawingBuffer: true }} dpr={window.devicePixelRatio} onCreated={(root) => (capture.root = root)}>
+      <Canvas flat shadows="percentage" gl={{ antialias: false, preserveDrawingBuffer: true }} dpr={window.devicePixelRatio} onCreated={(root) => (capture.root = root)}>
         <color attach="background" args={[props.season.finalLight]} />
         <Tiles season={props.season} pairs={props.pairs} gridSize={props.gridSize} progress={props.progress} />
         {/* tree-state lighting only: tiles and petals are unlit, so the scan-ready frame is unaffected */}
-        <ambientLight color="#fff4e8" intensity={1.2} />
-        <directionalLight color="#ffe6c8" intensity={2.2} position={[40, 80, 50]} />
+        <hemisphereLight args={['#eaf2ff', '#c9b79c', 1.3]} />
         <Suspense fallback={null}>
           <Scenery season={props.season} progress={props.progress} />
         </Suspense>
@@ -44,6 +43,8 @@ export function QrScene(props: Props) {
 
 const buffer = new Vector2()
 const target = new Vector3()
+const orbit = new Vector3()
+const HERO = Math.atan2(0.6, 1) // the tree view's azimuth off the front
 
 /** Owns both cameras and renders the frame; the scan-ready frame (progress 1) is always orthographic. */
 function Rig({ season, pairs, gridSize, modulePx, progress, rig }: Props) {
@@ -66,7 +67,7 @@ function Rig({ season, pairs, gridSize, modulePx, progress, rig }: Props) {
     // Narrow-FOV perspective that frames the grid like the ortho camera, so the hard switch barely shows.
     const height = season.baseSize / 2 / Math.tan(MathUtils.degToRad(END_FOV / 2))
     return {
-      from: { pos: new Vector3(0.6, 0.4, 1).setLength(Math.max(h, w) * 3.4).add(treeTarget), target: treeTarget, up: new Vector3(0, 1, 0), fov: 40 },
+      from: { dist: Math.max(h, w) * 3.4, target: treeTarget, up: new Vector3(0, 1, 0), fov: 40 },
       to: { pos: new Vector3(0, 0.5 + height, 0), target: new Vector3(0, 0.5, 0), up: new Vector3(0, 0, -1), fov: END_FOV },
     }
   }, [pairs, gridSize, season])
@@ -88,7 +89,10 @@ function Rig({ season, pairs, gridSize, modulePx, progress, rig }: Props) {
     } else {
       const { from, to } = poses
       const k = rig.value
-      persp.position.lerpVectors(from.pos, to.pos, k)
+      // Orbit to the front during the unfold, so the rise to top-down is a straight lift with no roll.
+      const a = HERO * (1 - MathUtils.smootherstep(progress.value, 0.05, 0.75))
+      orbit.set(Math.sin(a) * Math.hypot(0.6, 1), 0.4, Math.cos(a) * Math.hypot(0.6, 1)).setLength(from.dist).add(from.target)
+      persp.position.lerpVectors(orbit, to.pos, k)
       persp.up.lerpVectors(from.up, to.up, k).normalize()
       persp.lookAt(target.lerpVectors(from.target, to.target, k))
       persp.fov = MathUtils.lerp(from.fov, to.fov, k)

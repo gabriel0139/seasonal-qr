@@ -93,7 +93,8 @@ export function radialUnfold(slots: Slot[], cells: Cell[], gridSize: number, see
   const finderSlots = byHeight.slice(0, finderCells.length).sort((a, b) => azimuth(a) - azimuth(b))
   const pairs: TilePair[] = finderCells.map((cell, i) => ({ slot: finderSlots[i], cell, delay: FINDER_DELAY }))
 
-  const s = byHeight.slice(finderCells.length).reverse()
+  // Top down: the crown sheds first and the base last, so the reversed timeline grows from the ground up.
+  const s = byHeight.slice(finderCells.length)
   const g = cells.filter((k) => !k.finder).sort((a, b) => radius(a) - radius(b))
   for (let i = 0; i < g.length; i += CHUNK) {
     const sChunk = s.slice(i, i + CHUNK).sort((a, b) => azimuth(a) - azimuth(b))

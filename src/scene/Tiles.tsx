@@ -15,14 +15,24 @@ const vertexShader = /* glsl */ `
   uniform float uProgress;
   uniform float uScale;
   varying vec3 vColor;
+  vec3 spin(vec3 v, vec3 k, float a) { // Rodrigues rotation; exactly v at a = 0
+    return v * cos(a) + cross(k, v) * sin(a) + k * dot(k, v) * (1.0 - cos(a));
+  }
   void main() {
     float t = clamp((uProgress - aDelay) / float(FLIGHT), 0.0, 1.0); // every tile flies for FLIGHT, landing at aDelay + FLIGHT
     t = t * t * (3.0 - 2.0 * t);
     float e = t - 1.0; // back-out on the eased t: ~4% overshoot, exactly aEnd at t = 1
-    vec3 p = mix(aStart, aEnd, 1.0 + e * e * (2.0 * e + 1.0)) + position * mix(1.0, uScale, t); // 1 unit while hidden in the mesh, exactly uScale once landed
-    p.y += sin(t * 3.14159265) * 2.0; // arc so tiles fly rather than slide
-    // Lambert from the directional light in QrScene so flying tiles read as boxes; exactly 1 once landed (plan §5.4).
-    float shade = 0.65 + 0.35 * max(dot(normal, normalize(vec3(40.0, 80.0, 50.0))), 0.0);
+    vec3 d = aEnd - aStart;
+    float arc = sin(t * 3.14159265);
+    vec3 h = fract(sin(dot(aStart, vec3(12.9898, 78.233, 37.719))) * vec3(43758.5453, 22578.1459, 19642.349)); // per-tile randoms
+    // Hidden in the mesh a tile is a small leaf at a random tilt; it tumbles flat and grows to exactly uScale as it lands.
+    vec3 axis = normalize(h - 0.5 + 1e-4);
+    float angle = (1.0 - t) * (h.x - 0.5) * 16.0;
+    vec3 p = aStart + d * (1.0 + e * e * (2.0 * e + 1.0)) + spin(position * mix(vec3(0.8, 0.25, 0.8), vec3(uScale), t), axis, angle);
+    p.y += arc * (2.0 + 0.1 * length(d.xz)); // longer flights arc higher
+    p.xz += arc * (0.1 + 0.2 * h.y) * vec2(-d.z, d.x); // every path bows the same way round, so the flock curls like a gust
+    // Lambert from the directional light in Scenery so tumbling tiles catch the light; exactly 1 once landed (plan §5.4).
+    float shade = 0.65 + 0.35 * max(dot(spin(normal, axis, angle), normalize(vec3(40.0, 80.0, 50.0))), 0.0);
     vColor = mix(aStartColor, aEndColor, t) * mix(shade, 1.0, t);
     gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0);
   }

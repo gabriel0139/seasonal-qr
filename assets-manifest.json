@@ -1,7 +1,7 @@
 [
   {
     "path": "public/models/sakura.glb",
-    "description": "Sakura diorama: Trunk, Blossoms and tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, grass, flowers, lily pads)",
+    "description": "Sakura diorama: a cherry tree in full bloom with weeping boughs and a string of paper lanterns (Trunk; Blossoms = five pinks, deep to pale) on the tiered Base in a hanami garden, plus a Props group (pond, water, bridge, stone lantern, picnic mat and parasol, stepping stones, bamboo fence, petal drifts, rocks, grass, flowers, lily pads)",
     "slots": "public/trees/sakura.json",
     "generator": "tools/tree-build/sakura.py (shared builders in tools/tree-build/diorama.py)",
     "licence": "CC0-1.0",
@@ -21,7 +21,7 @@
   },
   {
     "path": "public/models/autumn.glb",
-    "description": "Autumn diorama: a leaning Japanese maple in full red (Trunk; Blossoms = flat tiered foliage pads in crimson, red, orange and amber) on the tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, dry grass, a few asters, lily pads, fallen leaves)",
+    "description": "Autumn diorama: a leaning Japanese maple (Trunk; Blossoms = 42 flat foliage pads from crimson to gold) on the tiered Base in a temple garden, plus a Props group (plaster wall, pond, water, stepping stones, stone lantern and basin, bench and parasol, leaf piles, pampas grass, fallen leaves, rocks, dry grass, lily pads); no bridge",
     "slots": "public/trees/autumn.json",
     "generator": "tools/tree-build/autumn.py (shared builders in tools/tree-build/diorama.py)",
     "licence": "CC0-1.0",
@@ -34,40 +34,40 @@
       "2": "canopy mid: inside a foliage pad, >= 0.6 deep",
       "3": "canopy pale: inside a foliage pad, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
       "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
-      "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to the canopy)",
+      "5": "wood: empty, the scene has no Bridge (its 8% went to the canopy)",
       "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
       "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
     }
   },
   {
     "path": "public/models/summer.glb",
-    "description": "Summer diorama: a broad camphor/zelkova-style shade tree under a four-shade green crown (Trunk; Blossoms = layered foliage puffs), on the tiered Base, plus a Props group (pond, water, bridge, lantern, rocks, grass, hydrangea-blue flowers, lily pads)",
+    "description": "Summer diorama: a broad shade tree with a rope swing and a caught kite (Trunk; Blossoms = layered leaf masses in five greens) on the tiered Base by a swimming hole, plus a Props group (pond, water, jetty, rowing boat, reeds, hammock, picnic, deckchair, beach toys, rocks, grass, flowers, lily pads); no bridge or lantern",
     "slots": "public/trees/summer.json",
     "generator": "tools/tree-build/summer.py (shared builders in tools/tree-build/diorama.py)",
     "licence": "CC0-1.0",
     "author": "seasonal-qr contributors",
     "generated": true,
-    "slotsFormat": "{\"name\":\"summer\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Lantern; wood: Bridge, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotsFormat": "{\"name\":\"summer\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Rocks; wood: the scene's Wood colour, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
     "slotClasses": {
       "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
       "1": "canopy deep: inside a foliage pad, >= 0.6 deep, lower/inner canopy",
       "2": "canopy mid: inside a foliage pad, >= 0.6 deep",
       "3": "canopy pale: inside a foliage pad, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
       "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
-      "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to the canopy)",
-      "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "5": "wood: empty, the scene has no Bridge (its 8% went to the canopy)",
+      "6": "stone: inside Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
       "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
     }
   },
   {
     "path": "public/models/winter.glb",
-    "description": "Winter diorama: a bare, gnarled zelkova whose branch ends carry mounded snow clumps as the canopy (Trunk; Blossoms = snow clumps), on a snow lawn, with an icy pond, a vermilion bridge, a snow-hatted lantern and a Snow prop",
+    "description": "Winter diorama: a bare zelkova with snow lying along its limbs and icicles (Trunk; Blossoms = the snow, in three shades) on a snow lawn in a Japanese garden, plus a Props group (half-frozen pond, water, vermilion bridge, snow-viewing lantern, snow hut, pines under a rope tent, bamboo fence, camellias, stepping stones, rocks)",
     "slots": "public/trees/winter.json",
     "generator": "tools/tree-build/winter.py (shared builders in tools/tree-build/diorama.py)",
     "licence": "CC0-1.0",
     "author": "seasonal-qr contributors",
     "generated": true,
-    "slotsFormat": "{\"name\":\"winter\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Lantern; wood: Bridge, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotsFormat": "{\"name\":\"winter\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Rocks; wood: the scene's Wood colour, carried although class 5 is empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
     "slotClasses": {
       "0": "trunk/branches: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
       "1": "canopy deep: inside a foliage pad, >= 0.6 deep, lower/inner canopy",
@@ -75,8 +75,88 @@
       "3": "canopy pale: inside a foliage pad, >= 0.6 deep, upper/outer canopy (1-3 together 78% of non-lawn, split 30/40/30)",
       "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
       "5": "wood: inside Bridge, >= 0.5 deep, y >= 0.5; empty, the bridge is nowhere 0.5 thick (its 8% went to the canopy)",
-      "6": "stone: inside Lantern or Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "6": "stone: inside Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
       "7": "pond water: in the basin under Water, >= 0.5 from the surface, the bed and every prop (4% of non-lawn)"
+    }
+  },
+  {
+    "path": "public/models/bunny.glb",
+    "description": "Spring bunny diorama: a plump sitting rabbit beside a wicker basket of painted eggs (Trunk = the basket; Blossoms = the rabbit and eggs), on the tiered Base in an egg-hunt meadow, plus a Props group (burrow mound, carrot patch, tulips and daffodils, toadstools, hidden eggs, rocks, grass, flowers); no pond, bridge or lantern",
+    "slots": "public/trees/bunny.json",
+    "generator": "tools/tree-build/bunny.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"bunny\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Rocks; wood and pond water: the scene's Wood and Water colours, carried although classes 5 and 7 are empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "structure: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "body deep: inside a body shell, >= 0.6 deep, lower/inner",
+      "2": "body mid: inside a body shell, >= 0.6 deep",
+      "3": "body pale: inside a body shell, >= 0.6 deep, upper/outer (1-3 together 82% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: empty, the scene has no Bridge (its 8% went to the body shells)",
+      "6": "stone: inside Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: empty, the scene has no pond (its 4% went to the body shells)"
+    }
+  },
+  {
+    "path": "public/models/sunflower.glb",
+    "description": "Sunflower diorama: a stand of giant sunflowers (Trunk = the stalks; Blossoms = seed discs, petals and leaves), on the tiered Base in a kitchen-garden corner, plus a Props group (picket fence with a gate, soil beds of young sunflowers and lettuces, beehive, hay bales, wheelbarrow, tomato teepees, rain barrel, watering can, rocks, grass, flowers); no pond, bridge or lantern",
+    "slots": "public/trees/sunflower.json",
+    "generator": "tools/tree-build/sunflower.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"sunflower\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Rocks; wood and pond water: the scene's Wood and Water colours, carried although classes 5 and 7 are empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "structure: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "body deep: inside a body shell, >= 0.6 deep, lower/inner",
+      "2": "body mid: inside a body shell, >= 0.6 deep",
+      "3": "body pale: inside a body shell, >= 0.6 deep, upper/outer (1-3 together 82% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: empty, the scene has no Bridge (its 8% went to the body shells)",
+      "6": "stone: inside Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: empty, the scene has no pond (its 4% went to the body shells)"
+    }
+  },
+  {
+    "path": "public/models/pumpkin.glb",
+    "description": "Pumpkin diorama: a carved jack-o'-lantern with smaller pumpkins (Trunk = stems and vines; Blossoms = the pumpkins, leaves and the glowing face), on the tiered Base in a harvest patch, plus a Props group (split-rail fence with a crow, corn shocks, hay bales, trailing vines, gourds, fallen leaves, rocks, dry grass); no pond, bridge or lantern",
+    "slots": "public/trees/pumpkin.json",
+    "generator": "tools/tree-build/pumpkin.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"pumpkin\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Rocks; wood and pond water: the scene's Wood and Water colours, carried although classes 5 and 7 are empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "structure: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "body deep: inside a body shell, >= 0.6 deep, lower/inner",
+      "2": "body mid: inside a body shell, >= 0.6 deep",
+      "3": "body pale: inside a body shell, >= 0.6 deep, upper/outer (1-3 together 82% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: empty, the scene has no Bridge (its 8% went to the body shells)",
+      "6": "stone: inside Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: empty, the scene has no pond (its 4% went to the body shells)"
+    }
+  },
+  {
+    "path": "public/models/snowman.glb",
+    "description": "Snowman diorama: a three-ball snowman with scarf, carrot nose, twig arms and a broom (Trunk = hat, arms and broom; Blossoms = the snowballs and accents), on a snow lawn in a clearing, plus a Props group (snow-laden firs, a snow fort, a skating rink, a log pile, a sledge, trails, rocks, dry grass); no pond, bridge or lantern",
+    "slots": "public/trees/snowman.json",
+    "generator": "tools/tree-build/snowman.py (shared builders in tools/tree-build/diorama.py)",
+    "licence": "CC0-1.0",
+    "author": "seasonal-qr contributors",
+    "generated": true,
+    "slotsFormat": "{\"name\":\"snowman\",\"baseSize\":72,\"palette\":[\"#rrggbb\" x 8],\"slots\":[[x,y,z,p],...]}: baseSize = width of the base top; palette = sRGB hex per slot class 0-7, the Principled base colour of the material the class samples (canopy 1-3: the deepest, second and palest canopy materials; stone: Rocks; wood and pond water: the scene's Wood and Water colours, carried although classes 5 and 7 are empty), from which the app derives every QR colour. Slots in GLB space (Y up), 2 decimals, 5,000 slots (3,000 lawn, 2,000 non-lawn) in one seeded shuffle stratified by class, so any prefix keeps the class proportions. Light modules and the quiet zone take lawn slots (p = 4), dark modules the rest.",
+    "slotClasses": {
+      "0": "structure: inside Trunk, >= 0.3 deep, y >= 0.3 (8% of non-lawn)",
+      "1": "body deep: inside a body shell, >= 0.6 deep, lower/inner",
+      "2": "body mid: inside a body shell, >= 0.6 deep",
+      "3": "body pale: inside a body shell, >= 0.6 deep, upper/outer (1-3 together 82% of non-lawn, split 30/40/30)",
+      "4": "lawn: inside Base, y in [-2.2, -0.6], >= 0.6 deep, >= 1.0 from the pond basin, >= 0.5 clear of the trunk and props",
+      "5": "wood: empty, the scene has no Bridge (its 8% went to the body shells)",
+      "6": "stone: inside Rocks, >= 0.5 deep, y >= 0.5 (10% of non-lawn)",
+      "7": "pond water: empty, the scene has no pond (its 4% went to the body shells)"
     }
   }
 ]

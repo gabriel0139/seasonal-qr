@@ -17,9 +17,9 @@ Two checks run on the colours:
 - `npm test` runs a unit test that enforces the brightness band: the darks sit in one narrow band and well below the light.
 - `npm run test:scan` is the real gate. It renders each payload in headless Chromium and decodes it with two decoders, direct and degraded.
 
-### (b) A new season tree
+### (b) A new season scene
 
-A tree is a GLB with this node contract:
+A scene is a GLB with this node contract (the centrepiece need not be a tree: any seasonal centrepiece works under the same node names):
 
 - Y up, base top at y = 0, and everything within ±36 units in x and z.
 - Root nodes `Trunk` (branches), `Blossoms` (the canopy), `Base` (the diorama plinth).

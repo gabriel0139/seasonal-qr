@@ -1,5 +1,5 @@
 // Captures the reveal animation as a grid of frames so the motion can be judged from one PNG.
-// Usage: npm run reveal:strip -- [--text=<payload>] [--frames=12] [--out=reveal-strip.png] [--size=600]
+// Usage: npm run reveal:strip -- [--text=<payload>] [--season=<id>] [--frames=12] [--out=reveal-strip.png] [--size=600]
 import { spawn } from 'node:child_process'
 import { writeFile } from 'node:fs/promises'
 import { chromium } from '@playwright/test'
@@ -67,7 +67,7 @@ async function captureFrames() {
     const page = await browser.newPage({ viewport: { width: size, height: size }, deviceScaleFactor: 1 })
     const pageErrors = []
     page.on('pageerror', (e) => pageErrors.push(e.message))
-    await page.goto(`${BASE}/?text=${encodeURIComponent(text)}`)
+    await page.goto(`${BASE}/?text=${encodeURIComponent(text)}${args.season ? `&season=${args.season}` : ''}`)
     await page.waitForSelector('canvas')
     await page.waitForTimeout(1500) // GLB load
 

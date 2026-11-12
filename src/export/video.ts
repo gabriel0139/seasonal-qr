@@ -1,5 +1,4 @@
 import { advance, type RootState } from '@react-three/fiber'
-import { BufferTarget, CanvasSource, getFirstEncodableVideoCodec, Mp4OutputFormat, Output, QUALITY_HIGH, WebMOutputFormat } from 'mediabunny'
 import { Vector2 } from 'three'
 
 const FPS = 30
@@ -12,6 +11,7 @@ export const capture: { size: number; root?: RootState } = { size: 0 }
 
 /** Renders the reveal at a fixed timestep (plan §19) and downloads it; false if this browser cannot encode video. */
 export async function exportVideo(tl: gsap.core.Timeline, onProgress: (fraction: number) => void): Promise<boolean> {
+  const { BufferTarget, CanvasSource, getFirstEncodableVideoCodec, Mp4OutputFormat, Output, QUALITY_HIGH, WebMOutputFormat } = await import('mediabunny') // only on "Export video"
   const root = capture.root
   // H.264/MP4 where the browser has it (Chrome, Safari); Playwright's Chromium has only VP9, so WebM.
   const codec = typeof VideoEncoder === 'undefined' ? null : await getFirstEncodableVideoCodec(['avc', 'vp9'], { width: SIZE, height: SIZE })
