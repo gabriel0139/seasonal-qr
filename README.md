@@ -7,7 +7,9 @@ A seasonal 3D diorama, a tree or a companion scene, that unfolds into a real, sc
 
 Type a URL or some text, pick a scene, press **Reveal the code**: the tiles hidden inside the scene fly out and settle into a QR code on the lawn, in the colours of the scene. Scan it from the screen, download it as PNG or SVG, or export the whole reveal as a video. Everything runs in your browser; nothing is uploaded.
 
-<!-- Demo GIF goes here once the site is deployed (Phase 5b). -->
+**Live site: [seasonal-qr.vercel.app](https://seasonal-qr.vercel.app/)**
+
+<!-- Demo GIF goes here (Phase 5b). -->
 
 ## Features
 

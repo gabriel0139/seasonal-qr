@@ -9,19 +9,20 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href="/fonts/shippori-mincho-500.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/instrument-sans.woff2" as="font" type="font/woff2" crossorigin />
-    <!-- TODO(deploy): scrapers need absolute URLs. Replace the two "/og.jpg" values with "<origin>/og.jpg" and add <meta property="og:url" content="<origin>/"> once the Vercel origin is known. -->
+    <!-- scrapers need absolute URLs: change these three if the site moves to another domain -->
+    <meta property="og:url" content="https://seasonal-qr.vercel.app/" />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Seasonal QR" />
     <meta property="og:title" content="Seasonal QR · a garden that falls into a QR code" />
     <meta property="og:description" content="Eight 3D garden scenes that shed, tile by tile, into a real, scannable QR code. Open source; nothing is uploaded." />
-    <meta property="og:image" content="/og.jpg" />
+    <meta property="og:image" content="https://seasonal-qr.vercel.app/og.jpg" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="A cherry tree diorama beside the QR code its tiles land as, in the same pinks." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="Seasonal QR · a garden that falls into a QR code" />
     <meta name="twitter:description" content="Eight 3D garden scenes that shed, tile by tile, into a real, scannable QR code." />
-    <meta name="twitter:image" content="/og.jpg" />
+    <meta name="twitter:image" content="https://seasonal-qr.vercel.app/og.jpg" />
     <style>
       /* Fonts are self-hosted (public/fonts/LICENCES.md): no request leaves this origin. */
       @font-face { font-family: 'Shippori Mincho'; src: url(/fonts/shippori-mincho-500.woff2) format('woff2'); font-weight: 500; font-display: swap; }
